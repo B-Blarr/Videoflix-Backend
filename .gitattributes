@@ -1,0 +1,46 @@
+# =====================================================================
+# Zeilenenden (Line Endings)
+#
+# Diese Datei ist die "Single Source of Truth" fuer dieses Repo und
+# gewinnt gegen die lokale core.autocrlf-Einstellung jedes Entwicklers.
+#
+# Grund: Skripte und Configs laufen im Linux-Container. Dort sind
+# CRLF (\r\n) ein echter Fehler, z. B. "/bin/sh^M: bad interpreter".
+# =====================================================================
+
+# Standard: Git erkennt Textdateien automatisch, speichert sie im Repo
+# immer mit LF - und schreibt sie dank eol=lf auch unter Windows mit LF
+# in die Arbeitskopie.
+* text=auto eol=lf
+
+# --- Muss zwingend LF sein (wird im Container ausgefuehrt/gelesen) ---
+*.sh            text eol=lf
+*.py            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.conf          text eol=lf
+*.Dockerfile    text eol=lf
+Dockerfile      text eol=lf
+.dockerignore   text eol=lf
+.env.template   text eol=lf
+
+# --- Windows-Tools erwarten CRLF ---
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+
+# --- Binaerdateien: Git darf hier nie konvertieren ---
+*.png       -text
+*.jpg       -text
+*.jpeg      -text
+*.gif       -text
+*.ico       -text
+*.webp      -text
+*.pdf       -text
+*.zip       -text
+*.gz        -text
+*.mp4       -text
+*.mov       -text
+*.mkv       -text
+*.webm      -text
+*.sqlite3   -text
