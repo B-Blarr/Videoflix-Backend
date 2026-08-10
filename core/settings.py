@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_rq',
-    'auth_app',
+    # 'auth_app',
+    'auth_app.apps.AuthAppConfig'
     # 'video_app',
 ]
 
