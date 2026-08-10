@@ -1,8 +1,12 @@
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+
+
+User = get_user_model()
 
 
 def build_activation_link(user):
@@ -21,3 +25,10 @@ def send_activation_email(user):
         fail_silently=False,
     )
 
+
+def get_user_from_uidb64(uidb64):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        return User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return None
