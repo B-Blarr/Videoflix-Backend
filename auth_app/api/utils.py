@@ -17,3 +17,8 @@ def set_auth_cookie(response, key, token):
 def unauthorized(detail):
     """Return a 401 response with the given detail message."""
     return Response({'detail': detail}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+def bad_request(detail):
+    """Return a 400 response with the given detail message."""
+    return Response({'detail': detail}, status=status.HTTP_400_BAD_REQUEST)

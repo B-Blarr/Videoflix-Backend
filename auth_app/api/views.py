@@ -3,10 +3,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .serializers import RegistrationSerializer, CookieTokenObtainPairSerializer
-from .utils import set_auth_cookie
+from .utils import set_auth_cookie, unauthorized, bad_request
 from auth_app.utils import get_user_from_uidb64
 
 
@@ -62,3 +62,22 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             "user": user
         }
         return response
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+
+    def post(self, request, *args, **kwargs):
+
+        refresh_token = request.COOKIES.get('refresh_token')
+        if refresh_token is None:
+            return bad_request('Refresh token not found!')
+        serializer = self.get_serializer(data={'refresh': refresh_token})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError:
+            return unauthorized('Refresh token invalid!')
+        access = serializer.validated_data.get('access')
+        response = Response({'detail': 'Token refreshed', 'access': access})
+        set_auth_cookie(response, 'access_token', access)
+
+        return response    
