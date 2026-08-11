@@ -3,11 +3,18 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .serializers import RegistrationSerializer, CookieTokenObtainPairSerializer
 from .utils import set_auth_cookie, unauthorized, bad_request
 from auth_app.utils import get_user_from_uidb64
+
+LOGOUT_DETAIL = (
+    "Logout successful! All tokens will be deleted. "
+    "Refresh token is now invalid."
+)
 
 
 class RegistrationView(APIView):
@@ -81,3 +88,20 @@ class CookieTokenRefreshView(TokenRefreshView):
         set_auth_cookie(response, 'access_token', access)
 
         return response    
+
+
+class LogoutView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if refresh_token is None:
+            return bad_request('Refresh token not found!')
+        try:
+            RefreshToken(refresh_token).blacklist()
+        except TokenError:
+            return unauthorized('User is already logged out!')
+        response = Response(
+            {'detail': LOGOUT_DETAIL}, status=status.HTTP_200_OK)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
