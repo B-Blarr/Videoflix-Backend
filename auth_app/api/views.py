@@ -3,8 +3,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .serializers import RegistrationSerializer
+from .serializers import RegistrationSerializer, CookieTokenObtainPairSerializer
+from .utils import set_auth_cookie
 from auth_app.utils import get_user_from_uidb64
 
 
@@ -43,3 +45,22 @@ class ActivateView(APIView):
         user.is_active = True
         user.save()
         return Response({"message": "Account successfully activated."})
+
+
+class CookieTokenObtainPairView(TokenObtainPairView):
+
+    serializer_class = CookieTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+
+        response = super().post(request, *args, **kwargs)
+        user = response.data.get('user')
+        set_auth_cookie(
+            response, 'access_token', response.data.get('access'))
+        set_auth_cookie(
+            response, 'refresh_token', response.data.get('refresh'))
+        response.data = {
+            "detail": "Login successful",
+            "user": user
+        }
+        return response

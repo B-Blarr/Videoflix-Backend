@@ -181,6 +181,8 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", default="http://127.0.0.1:5500")
 
+COOKIE_SECURE = os.environ.get("COOKIE_SECURE", default="False") == "True"
+
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", default="noreply@videoflix.local")
 
 
