@@ -11,7 +11,6 @@ from auth_app.utils import get_user_from_uidb64
 
 
 class RegistrationView(APIView):
-    """Register a new user account."""
 
     permission_classes = [AllowAny]
 
@@ -31,7 +30,6 @@ class RegistrationView(APIView):
 
 
 class ActivateView(APIView):
-    """Activate a user account using the uid and token from the email."""
 
     permission_classes = [AllowAny]
 
