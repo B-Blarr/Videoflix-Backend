@@ -58,3 +58,20 @@ class CookieTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class PasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class PasswordConfirmSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+
+        password_validation.validate_password(value)
+        return value
+
+    def validate(self, attrs):
+
+        if attrs['new_password'] != attrs['confirmed_password']:
+            raise serializers.ValidationError(
+                {'confirmed_password': 'Passwords do not match'})
+        return attrs

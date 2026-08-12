@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .serializers import RegistrationSerializer, CookieTokenObtainPairSerializer,\
-    PasswordResetSerializer
+    PasswordResetSerializer, PasswordConfirmSerializer
 from .utils import set_auth_cookie, unauthorized, bad_request
 from auth_app.utils import get_user_from_uidb64, send_password_reset_email
 
@@ -21,6 +21,8 @@ LOGOUT_DETAIL = (
 )
 
 PASSWORD_RESET_DETAIL = ("An email has been sent to reset your password.")
+
+PASSWORD_CONFIRM_DETAIL = ("Your Password has been successfully reset.")
 
 
 class RegistrationView(APIView):
@@ -124,3 +126,18 @@ class PasswordResetView(APIView):
         if user is not None:
             send_password_reset_email(user)
         return Response({"detail": PASSWORD_RESET_DETAIL})
+
+
+class PasswordChangeView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token):
+        user = get_user_from_uidb64(uidb64)
+        if user is None or not default_token_generator.check_token(user, token):
+            return bad_request("Invalid or expired reset link.")
+        serializer = PasswordConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
+        return Response({"detail": PASSWORD_CONFIRM_DETAIL})
