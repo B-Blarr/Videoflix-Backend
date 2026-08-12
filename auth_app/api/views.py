@@ -128,7 +128,7 @@ class PasswordResetView(APIView):
         return Response({"detail": PASSWORD_RESET_DETAIL})
 
 
-class PasswordChangeView(APIView):
+class PasswordConfirmView(APIView):
 
     permission_classes = [AllowAny]
 
