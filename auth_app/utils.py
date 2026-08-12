@@ -32,3 +32,20 @@ def get_user_from_uidb64(uidb64):
         return User.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         return None
+
+
+def build_password_reset_link(user):
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    return f"{settings.FRONTEND_URL}/pages/auth/confirm_password.html?uid={uidb64}&token={token}"
+
+
+def send_password_reset_email(user):
+    link = build_password_reset_link(user)
+    send_mail(
+        subject="Reset your password",
+        message=f"Please click on the link to change your password: {link}",
+        from_email=None,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
