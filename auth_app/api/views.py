@@ -1,4 +1,5 @@
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import get_user_model
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.views import APIView
@@ -7,14 +8,19 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .serializers import RegistrationSerializer, CookieTokenObtainPairSerializer
+from .serializers import RegistrationSerializer, CookieTokenObtainPairSerializer,\
+    PasswordResetSerializer
 from .utils import set_auth_cookie, unauthorized, bad_request
-from auth_app.utils import get_user_from_uidb64
+from auth_app.utils import get_user_from_uidb64, send_password_reset_email
+
+User = get_user_model()
 
 LOGOUT_DETAIL = (
     "Logout successful! All tokens will be deleted. "
     "Refresh token is now invalid."
 )
+
+PASSWORD_RESET_DETAIL = ("An email has been sent to reset your password.")
 
 
 class RegistrationView(APIView):
@@ -105,3 +111,16 @@ class LogoutView(APIView):
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
         return response
+
+
+class PasswordResetView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = User.objects.filter(email=serializer.validated_data["email"]).first()
+        if user is not None:
+            send_password_reset_email(user)
+        return Response({"detail": PASSWORD_RESET_DETAIL})

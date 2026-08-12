@@ -54,3 +54,7 @@ class CookieTokenObtainPairSerializer(TokenObtainPairSerializer):
             'username': self.user.email,
         }
         return data
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
