@@ -11,7 +11,6 @@ class RegistrationTests(APITestCase):
     """Tests for POST /api/register/."""
 
     def setUp(self):
- 
         self.user = User.objects.create_user(
             username='test@test.de', password='SuperSecret123!',
             email='test@test.de')
@@ -23,7 +22,6 @@ class RegistrationTests(APITestCase):
         }
 
     def test_registration(self):
-        """A valid payload creates the user and returns 201."""
         url = reverse('register')
         data = {
             'email': 'new@test.de',
@@ -42,7 +40,6 @@ class RegistrationTests(APITestCase):
         self.assertIn("activate.html", mail.outbox[0].body)
 
     def test_registration_password_mismatch_returns_400(self):
-
         url = reverse('register')
         data = {
             'email': 'new@test.de',
@@ -54,3 +51,14 @@ class RegistrationTests(APITestCase):
             response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
         self.assertIn('confirmed_password', response.data)
 
+    def test_registration_email_exists_returns_400(self):
+        url = reverse('register')
+        data = {
+            'email': 'test@test.de',
+            'password': 'SuperSecret123!',
+            'confirmed_password': 'SuperSecret123!',
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+        self.assertIn('email', response.data)
