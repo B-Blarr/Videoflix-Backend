@@ -15,6 +15,12 @@ class RegistrationTests(APITestCase):
         self.user = User.objects.create_user(
             username='test@test.de', password='SuperSecret123!',
             email='test@test.de')
+        self.url = reverse('register')
+        self.data = {
+            'email': 'new@test.de',
+            'password': 'SuperSecret123!',
+            'confirmed_password': 'SuperSecret123!',
+        }
 
     def test_registration(self):
         """A valid payload creates the user and returns 201."""
@@ -29,9 +35,22 @@ class RegistrationTests(APITestCase):
             response.status_code, status.HTTP_201_CREATED, response.data)
         self.assertTrue(User.objects.filter(email='new@test.de').exists())
 
-
     def test_registration_sends_activation_email(self):
         self.client.post(self.url, self.data)
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, ["peter@testmail.de"])
+        self.assertEqual(mail.outbox[0].to, ['new@test.de'])
         self.assertIn("activate.html", mail.outbox[0].body)
+
+    def test_registration_password_mismatch_returns_400(self):
+
+        url = reverse('register')
+        data = {
+            'email': 'new@test.de',
+            'password': 'SuperSecret123!',
+            'confirmed_password': 'differentpassword',
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+        self.assertIn('confirmed_password', response.data)
+
