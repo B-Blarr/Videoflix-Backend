@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.core import mail
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -27,3 +28,10 @@ class RegistrationTests(APITestCase):
         self.assertEqual(
             response.status_code, status.HTTP_201_CREATED, response.data)
         self.assertTrue(User.objects.filter(email='new@test.de').exists())
+
+
+    def test_registration_sends_activation_email(self):
+        self.client.post(self.url, self.data)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["peter@testmail.de"])
+        self.assertIn("activate.html", mail.outbox[0].body)
