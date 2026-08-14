@@ -136,5 +136,15 @@ class TokenRefreshTests(APITestCase):
         self.assertEqual(response.data['detail'], 'Token refreshed')
         self.assertIn('access_token', response.cookies)
 
+    def test_token_refresh_without_login_returns_400(self):
+        client = APIClient()
+        response = client.post(reverse('token_refresh'))
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
 
-        
+    def test_token_refresh_with_invalid_token_returns_401(self):
+        client = APIClient()
+        client.cookies['refresh_token'] = 'not-a-valid-token'
+        response = client.post(reverse('token_refresh'))
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data)        
