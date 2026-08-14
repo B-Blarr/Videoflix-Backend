@@ -118,8 +118,7 @@ class LogoutTests(APITestCase):
 
 class TokenRefreshTests(APITestCase):
     
-    def setUp(self):
-        
+    def setUp(self):     
         self.user = User.objects.create_user(
             username='test@test.de', password='SuperSecret123!',
             email='test@test.de')
@@ -130,10 +129,12 @@ class TokenRefreshTests(APITestCase):
         )
 
     def test_token_refresh(self):
-     
         url = reverse('token_refresh')
         response = self.client.post(url)
         self.assertEqual(
             response.status_code, status.HTTP_200_OK, response.data)
-        self.assertEqual(response.data['detail'], 'Token refreshed', ['access'], 'new_access_token')
+        self.assertEqual(response.data['detail'], 'Token refreshed')
         self.assertIn('access_token', response.cookies)
+
+
+        
