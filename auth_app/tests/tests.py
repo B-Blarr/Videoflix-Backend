@@ -8,7 +8,6 @@ User = get_user_model()
 
 
 class RegistrationTests(APITestCase):
-    """Tests for POST /api/register/."""
 
     def setUp(self):
         self.user = User.objects.create_user(
@@ -80,3 +79,27 @@ class LoginTests(APITestCase):
         self.assertEqual(response.data['user']['username'], 'test@test.de')
         self.assertIn('access_token', response.cookies)
         self.assertIn('refresh_token', response.cookies)
+
+
+class LogoutTests(APITestCase):
+  
+    def setUp(self):
+      
+        self.user = User.objects.create_user(
+            username='test@test.de', password='SuperSecret123!',
+            email='test@test.de')
+        self.client.post(
+            reverse('login'),
+            {'email': 'test@test.de', 'password': 'SuperSecret123!'},
+            format='json',
+        )
+        
+    def test_logout(self):
+
+        url = reverse('logout')
+        response = self.client.post(url)
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(response.cookies['access_token'].value, '')
+        self.assertEqual(response.cookies['refresh_token'].value, '')
+        self.assertIn('detail', response.data)
