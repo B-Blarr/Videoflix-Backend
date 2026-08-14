@@ -114,3 +114,26 @@ class LogoutTests(APITestCase):
         response = self.client.post(reverse('logout'))
         self.assertEqual(
             response.status_code, status.HTTP_401_UNAUTHORIZED, response.data)
+
+
+class TokenRefreshTests(APITestCase):
+    
+    def setUp(self):
+        
+        self.user = User.objects.create_user(
+            username='test@test.de', password='SuperSecret123!',
+            email='test@test.de')
+        self.client.post(
+            reverse('login'),
+            {'email': 'test@test.de', 'password': 'SuperSecret123!'},
+            format='json',
+        )
+
+    def test_token_refresh(self):
+     
+        url = reverse('token_refresh')
+        response = self.client.post(url)
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(response.data['detail'], 'Token refreshed', ['access'], 'new_access_token')
+        self.assertIn('access_token', response.cookies)
