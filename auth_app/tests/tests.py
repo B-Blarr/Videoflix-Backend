@@ -103,3 +103,14 @@ class LogoutTests(APITestCase):
         self.assertEqual(response.cookies['access_token'].value, '')
         self.assertEqual(response.cookies['refresh_token'].value, '')
         self.assertIn('detail', response.data)
+
+    def test_user_already_logged_out_returns_401(self):
+       
+        access = self.client.cookies['access_token'].value
+        refresh = self.client.cookies['refresh_token'].value
+        self.client.post(reverse('logout'))
+        self.client.cookies['access_token'] = access
+        self.client.cookies['refresh_token'] = refresh
+        response = self.client.post(reverse('logout'))
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data)
