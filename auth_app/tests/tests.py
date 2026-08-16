@@ -1,6 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.urls import reverse
+from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -148,3 +151,22 @@ class TokenRefreshTests(APITestCase):
         response = client.post(reverse('token_refresh'))
         self.assertEqual(
             response.status_code, status.HTTP_401_UNAUTHORIZED, response.data)        
+
+
+class ActivateTests(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='test@test.de', password='SuperSecret123!',
+            email='test@test.de', is_active=False)
+        self.uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        self.token = default_token_generator.make_token(self.user)
+
+    def test_activate(self):
+            url = reverse('activate', args=[self.uidb64, self.token])
+            response = self.client.get(url)
+            self.assertEqual(
+                response.status_code, status.HTTP_200_OK, response.data)
+            self.assertEqual(response.data['message'], 'Account successfully activated.')
+            self.user.refresh_from_db()
+            self.assertTrue(self.user.is_active)
