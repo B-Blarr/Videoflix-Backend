@@ -132,7 +132,7 @@ class PasswordConfirmView(APIView):
 
     permission_classes = [AllowAny]
 
-    def get(self, request, uidb64, token):
+    def post(self, request, uidb64, token):
         user = get_user_from_uidb64(uidb64)
         if user is None or not default_token_generator.check_token(user, token):
             return bad_request("Invalid or expired reset link.")

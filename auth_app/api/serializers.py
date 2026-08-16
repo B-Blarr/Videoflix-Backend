@@ -2,9 +2,12 @@ from django.contrib.auth import password_validation, get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 
 User = get_user_model()
+
+GENERIC_INPUT_ERROR = "Please check your input and try again."
 
 class RegistrationSerializer(serializers.ModelSerializer):
 
@@ -16,7 +19,15 @@ class RegistrationSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {
                 'write_only': True
-            }
+            },
+            'email': {
+                'validators': [
+                    UniqueValidator(
+                        queryset=User.objects.all(),
+                        message=GENERIC_INPUT_ERROR,
+                    )
+                ]
+            },
         }
 
     def validate_password(self, value):
@@ -71,7 +82,7 @@ class PasswordConfirmSerializer(serializers.Serializer):
 
     def validate(self, attrs):
 
-        if attrs['new_password'] != attrs['confirmed_password']:
+        if attrs['new_password'] != attrs['confirm_password']:
             raise serializers.ValidationError(
-                {'confirmed_password': 'Passwords do not match'})
+                {'confirm_password': 'Passwords do not match'})
         return attrs

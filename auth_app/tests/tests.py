@@ -206,3 +206,24 @@ class PasswordResetTests(APITestCase):
         self.assertEqual(
             response.status_code, status.HTTP_200_OK, response.data)
         self.assertEqual(len(mail.outbox), 0)
+
+class PasswordConfirmTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='test@test.de', password='SuperSecret123!',
+            email='test@test.de')
+        self.uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        self.token = default_token_generator.make_token(self.user)
+        self.url = reverse(
+            'password_confirm', args=[self.uidb64, self.token])
+        self.data = {
+            'new_password': 'MynewSecret123!',
+            'confirm_password': 'MynewSecret123!',
+        }
+
+    def test_password_confirm(self):
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('MynewSecret123!'))    
