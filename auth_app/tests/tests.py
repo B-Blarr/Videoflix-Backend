@@ -182,3 +182,27 @@ class ActivateTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(
             response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+
+
+class PasswordResetTests(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='test@test.de', password='SuperSecret123!',
+            email='test@test.de')
+        self.url = reverse('password_reset')
+
+    def test_password_reset_send_email(self):
+        response = self.client.post(
+            self.url, {'email': 'test@test.de'}, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('confirm_password.html', mail.outbox[0].body)        
+
+    def test_password_reset_unknown_email_returns_200(self):
+        response = self.client.post(
+            self.url, {'email': 'unknown@unknown.de'}, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(len(mail.outbox), 0)
