@@ -163,10 +163,22 @@ class ActivateTests(APITestCase):
         self.token = default_token_generator.make_token(self.user)
 
     def test_activate(self):
-            url = reverse('activate', args=[self.uidb64, self.token])
-            response = self.client.get(url)
-            self.assertEqual(
-                response.status_code, status.HTTP_200_OK, response.data)
-            self.assertEqual(response.data['message'], 'Account successfully activated.')
-            self.user.refresh_from_db()
-            self.assertTrue(self.user.is_active)
+        url = reverse('activate', args=[self.uidb64, self.token])
+        response = self.client.get(url)
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(response.data['message'], 'Account successfully activated.')
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_invalid_token_returns_400(self):
+        url = reverse('activate', args=[self.uidb64, 'invalid-token'])
+        response = self.client.get(url)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+
+    def test_invalid_uidb_returns_400(self):
+        url = reverse('activate', args=['invalid-uidb', self.token])
+        response = self.client.get(url)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
