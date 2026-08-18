@@ -175,6 +175,19 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Video 
+
+HLS_SEGMENT_SECONDS = 6
+HLS_GOP_SECONDS = 2
+HLS_CRF = 23
+HLS_PRESET = "fast"
+HLS_AUDIO_BITRATE = "128k"
+HLS_RESOLUTIONS = {
+    480: 800_000,
+    720: 2_000_000,
+    1080: 4_500_000,
+}
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
