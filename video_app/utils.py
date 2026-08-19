@@ -11,6 +11,20 @@ class VideoProbeError(Exception):
 
 
 def probe_video(path):
+    result = run_ffprobe(path)
+    data = json.loads(result.stdout)
+    if not data.get('streams'):
+            raise VideoProbeError('no video track found')
+    stream = data['streams'][0]
+    return {
+        'width': stream['width'],
+        'height': stream['height'],
+        'fps': parse_fps(stream['r_frame_rate']),
+        'duration': float(data['format']['duration']),
+    }
+
+
+def run_ffprobe(path):
     try:
         result = subprocess.run(
             [
@@ -26,21 +40,14 @@ def probe_video(path):
         raise VideoProbeError(f'ffprobe timeout: {path}')
     except subprocess.CalledProcessError as e:
         raise VideoProbeError(f'ffprobe failed: {e.stderr}')
-    
-    data = json.loads(result.stdout)
-    if not data.get('streams'):
-        raise VideoProbeError('no video track found')
-    stream = data['streams'][0]
+    except FileNotFoundError:
+        raise VideoProbeError('ffprobe not found')
+    return result
 
-    num, den = stream['r_frame_rate'].split('/')
-    fps = int(num) / int(den)
 
-    return {
-        'width': stream['width'],
-        'height': stream['height'],
-        'fps': fps,
-        'duration': float(data['format']['duration']),
-    }
+def parse_fps(raw):
+    num, den = raw.split('/')
+    return int(num) / int(den)
 
 
 def build_hls_command(input_path, output_dir, height, fps):
@@ -72,7 +79,7 @@ def convert_video(video_id):
     try:
         run_conversion(video)
         video.status = 'done'
-    except(VideoProbeError, subprocess.CalledProcessError):
+    except(VideoProbeError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         video.status = 'failed'
     finally:
         video.save()
