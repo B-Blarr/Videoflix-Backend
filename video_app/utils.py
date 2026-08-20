@@ -88,12 +88,11 @@ def convert_video(video_id):
 def run_conversion(video):
     info = probe_video(video.video_file.path)
     base_dir = os.path.join(settings.MEDIA_ROOT, "videos", str(video.id))
-
     heights = []
     for height in settings.HLS_RESOLUTIONS:
         if height <= info['height']:
             heights.append(height)
-
+    create_thumbnail(video, info['duration'])
     for height in heights:
         encode_variant(video.video_file.path, base_dir, height, info['fps'])
 
@@ -106,3 +105,24 @@ def encode_variant(input_path, base_dir, height, fps):
     os.makedirs(output_dir, exist_ok=True)
     cmd = build_hls_command(input_path, output_dir, height, fps)
     subprocess.run(cmd, check=True, timeout=3600)
+
+
+def build_thumbnail_command(input_path, output_path, position):
+
+    return [
+        'ffmpeg', '-y',
+        '-ss', str(position),
+        '-i', input_path,
+        '-vf', 'thumbnail=300,scale=-2:360',
+        '-frames:v', '1',
+        output_path,
+    ]    
+
+
+def create_thumbnail(video, duration):
+    rel_path = f'thumbnails/{video.id}.jpg'
+    abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+    os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+    cmd = build_thumbnail_command(video.video_file.path, abs_path, duration / 2)
+    subprocess.run(cmd, check=True, timeout=60)
+    video.thumbnail = rel_path
