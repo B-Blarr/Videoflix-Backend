@@ -126,3 +126,16 @@ def create_thumbnail(video, duration):
     cmd = build_thumbnail_command(video.video_file.path, abs_path, duration / 2)
     subprocess.run(cmd, check=True, timeout=60)
     video.thumbnail = rel_path
+
+
+def hls_dir(video_id):
+    """Return the directory that holds the HLS files of a video."""
+    return os.path.join(settings.MEDIA_ROOT, 'videos', str(video_id))
+
+
+def hls_file_path(video_id, resolution, filename):
+    """Return the path of an HLS file, or None if it is not available."""
+    if resolution not in {f'{height}p' for height in settings.HLS_RESOLUTIONS}:
+        return None
+    path = os.path.join(hls_dir(video_id), resolution, filename)
+    return path if os.path.isfile(path) else None   
