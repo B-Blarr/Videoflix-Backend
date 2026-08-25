@@ -1,3 +1,5 @@
+import django_rq
+from django.db import transaction
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 
@@ -9,4 +11,7 @@ from .utils import convert_video
 def start_converting_video(sender, instance, created, **kwargs):
     if not created:
         return
-    convert_video(instance.id)
+    def enqueue_conversion():
+        django_rq.get_queue("default").enqueue(convert_video, instance.id)
+
+    transaction.on_commit(enqueue_conversion)
