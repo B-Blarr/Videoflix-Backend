@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -17,13 +19,14 @@ def build_activation_link(user):
 
 def send_activation_email(user):
     link = build_activation_link(user)
-    send_mail(
-        subject="Confirm your email",
-        message=f"Please confirm your email address: {link}",
-        from_email=None,
-        recipient_list=[user.email],
-        fail_silently=False,
+    html_body = render_to_string('email_activation.html', {'link': link})
+    mail = EmailMultiAlternatives(
+        subject='Confirm your email',
+        body=f'Please confirm your email address: {link}',
+        to=[user.email],
     )
+    mail.attach_alternative(html_body, 'text/html')
+    mail.send()
 
 
 def get_user_from_uidb64(uidb64):
