@@ -1,4 +1,4 @@
-import json, os
+import json, os, shutil
 import subprocess
 from django.conf import settings
 
@@ -139,3 +139,10 @@ def hls_file_path(video_id, resolution, filename):
         return None
     path = os.path.join(hls_dir(video_id), resolution, filename)
     return path if os.path.isfile(path) else None   
+
+
+def remove_video_files(video):
+    """Delete the HLS folder, the source file and the thumbnail of a video."""
+    shutil.rmtree(hls_dir(video.id), ignore_errors=True)
+    video.video_file.delete(save=False)
+    video.thumbnail.delete(save=False)    
