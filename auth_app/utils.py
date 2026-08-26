@@ -1,12 +1,11 @@
 import os
 
 from django.conf import settings
-from email.mime.image import MIMEImage
+from email.message import MIMEPart
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
@@ -20,15 +19,29 @@ def build_activation_link(user):
     return f"{settings.FRONTEND_URL}/pages/auth/activate.html?uid={uidb64}&token={token}"
 
 
+def attach_logo(mail):
+    """Attach the logo so it can be displayed inside the email body."""
+    path = os.path.join(settings.BASE_DIR, 'auth_app', 'static', 'logo.png')
+    image = MIMEPart()
+    with open(path, 'rb') as logo:
+        image.set_content(
+            logo.read(), maintype='image', subtype='png',
+            cid='<logo>', disposition='inline', filename='logo.png',
+        )
+    mail.attach(image)
+
+
+
 def send_activation_email(user):
     link = build_activation_link(user)
-    html_body = render_to_string('email_activation.html', {'link': link})
+    html_body = render_to_string('email_activation.html', {'link': link, 'email': user.email})
     mail = EmailMultiAlternatives(
         subject='Confirm your email',
         body=f'Please confirm your email address: {link}',
         to=[user.email],
     )
     mail.attach_alternative(html_body, 'text/html')
+    attach_logo(mail)
     mail.send()
 
 
@@ -48,21 +61,15 @@ def build_password_reset_link(user):
 
 def send_password_reset_email(user):
     link = build_password_reset_link(user)
-    send_mail(
+    html_body = render_to_string('reset_password.html', {'link': link, 'email': user.email})
+    mail = EmailMultiAlternatives(
         subject="Reset your password",
-        message=f"Please click on the link to change your password: {link}",
+        body=f"Please click on the link to change your password: {link}",
         from_email=None,
-        recipient_list=[user.email],
-        fail_silently=False,
+        to=[user.email],
     )
+    mail.attach_alternative(html_body, 'text/html')
+    attach_logo(mail)
+    mail.send()
 
 
-def attach_logo(mail):
-    """Attach the logo so it can be displayed inside the email body."""
-    path = os.path.join(settings.BASE_DIR, 'auth_app', 'static', 'logo.png')
-    with open(path, 'rb') as logo:
-        image = MIMEImage(logo.read())
-    image.add_header('Content-ID', '<logo>')
-    image.add_header('Content-Disposition', 'inline', filename='logo.png')
-    mail.attach(image)
-    mail.mixed_subtype = 'related'
