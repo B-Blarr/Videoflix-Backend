@@ -5,16 +5,20 @@ import shutil
 import tempfile
 
 from unittest.mock import patch
-from django.test import TestCase
+from django.test import TestCase, SimpleTestCase, override_settings
 from django.contrib.auth import get_user_model
-from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from video_app.models import Video
-from video_app.utils import probe_video, VideoProbeError
+from video_app.utils import (
+    probe_video,
+    VideoProbeError,
+    convert_video,
+    build_hls_command,
+)
 
 
 User = get_user_model()
@@ -98,3 +102,44 @@ class HLSViewTests(APITestCase):
         response = self.client.get(reverse('video_list'))
         self.assertTrue(
             response.data[0]['thumbnail_url'].startswith('http://'))
+
+
+class ConvertVideoTests(TestCase):
+
+    def setUp(self):
+        self.video = Video.objects.create(
+            title='Test', description='Desc', category='Drama',
+            video_file='videos/test.mp4')
+
+    @patch('video_app.utils.create_thumbnail')
+    @patch('video_app.utils.encode_variant')
+    @patch('video_app.utils.probe_video')
+    def test_convert_video_sets_status_done(
+            self, mock_probe, mock_encode, mock_thumb):
+        mock_probe.return_value = {
+            'width': 1920, 'height': 1080, 'fps': 25.0, 'duration': 8.0}
+        convert_video(self.video.id)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.status, 'done')
+        self.assertEqual(self.video.available_resolutions, [480, 720, 1080])
+        self.assertEqual(self.video.duration, 8.0)
+        self.assertEqual(mock_encode.call_count, 3)
+
+    @patch('video_app.utils.probe_video')
+    def test_convert_video_sets_status_failed(self, mock_probe):
+        mock_probe.side_effect = VideoProbeError('kaputt')
+        convert_video(self.video.id)
+        self.video.refresh_from_db()
+        self.assertEqual(self.video.status, 'failed')
+
+
+class BuildHlsCommandTests(SimpleTestCase):
+
+    def test_gop_is_calculated_from_fps(self):
+        cmd = build_hls_command('/in.mp4', '/out', 480, 25.0)
+        self.assertEqual(cmd[cmd.index('-g') + 1], '50')
+        self.assertEqual(cmd[cmd.index('-keyint_min') + 1], '50')
+
+    def test_scale_filter_uses_given_height(self):
+        cmd = build_hls_command('/in.mp4', '/out', 720, 25.0)
+        self.assertIn('scale=-2:720', cmd)
