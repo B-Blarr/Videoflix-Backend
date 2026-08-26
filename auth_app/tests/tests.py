@@ -2,14 +2,21 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.urls import reverse
+from django.conf import settings
+from django.test import override_settings
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 User = get_user_model()
+SYNC_QUEUES = {
+    name: {**config, 'ASYNC': False}
+    for name, config in settings.RQ_QUEUES.items()
+}
 
 
+@override_settings(RQ_QUEUES=SYNC_QUEUES)
 class RegistrationTests(APITestCase):
 
     def setUp(self):
@@ -36,7 +43,8 @@ class RegistrationTests(APITestCase):
         self.assertTrue(User.objects.filter(email='new@test.de').exists())
 
     def test_registration_sends_activation_email(self):
-        self.client.post(self.url, self.data)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(self.url, self.data)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['new@test.de'])
         self.assertIn("activate.html", mail.outbox[0].body)
@@ -184,6 +192,7 @@ class ActivateTests(APITestCase):
             response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
 
 
+@override_settings(RQ_QUEUES=SYNC_QUEUES)
 class PasswordResetTests(APITestCase):
 
     def setUp(self):
@@ -193,8 +202,9 @@ class PasswordResetTests(APITestCase):
         self.url = reverse('password_reset')
 
     def test_password_reset_send_email(self):
-        response = self.client.post(
-            self.url, {'email': 'test@test.de'}, format='json')
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                self.url, {'email': 'test@test.de'}, format='json')
         self.assertEqual(
             response.status_code, status.HTTP_200_OK, response.data)
         self.assertEqual(len(mail.outbox), 1)
