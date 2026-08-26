@@ -18,6 +18,7 @@ from video_app.utils import (
     VideoProbeError,
     convert_video,
     build_hls_command,
+    create_thumbnail,
 )
 
 
@@ -143,3 +144,20 @@ class BuildHlsCommandTests(SimpleTestCase):
     def test_scale_filter_uses_given_height(self):
         cmd = build_hls_command('/in.mp4', '/out', 720, 25.0)
         self.assertIn('scale=-2:720', cmd)
+
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA)
+class CreateThumbnailTests(TestCase):
+
+    def setUp(self):
+        self.video = Video.objects.create(
+            title='T', description='D', category='Drama',
+            video_file='videos/test.mp4')
+
+    @patch('video_app.utils.subprocess.run')
+    def test_thumbnail_path_and_position(self, mock_run):
+        create_thumbnail(self.video, 10.0)
+        self.assertEqual(
+            self.video.thumbnail.name, f'thumbnails/{self.video.id}.jpg')
+        cmd = mock_run.call_args[0][0]
+        self.assertEqual(cmd[cmd.index('-ss') + 1], '5.0')

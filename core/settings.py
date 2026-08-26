@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'auth_app.apps.AuthAppConfig',
     'corsheaders',
     'video_app.apps.VideoAppConfig',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -217,12 +218,38 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'auth_app.api.authentication.CookieJWTAuthentication'
     ],
-    # 'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Videoflix API',
+    'DESCRIPTION': """Backend for Videoflix, a video streaming platform.
+
+### Authentication
+
+Login sets `access_token` and `refresh_token` as **HttpOnly cookies**.
+Protected endpoints read the access token from that cookie, not from an
+`Authorization` header, so requests must be sent with `credentials: "include"`.
+An expired access token can be renewed via `/api/token/refresh/` using the
+refresh cookie.
+
+### Videos
+
+Videos are uploaded through the Django admin. A background worker (Django RQ)
+then extracts a thumbnail and converts the file to HLS in 480p, 720p and 1080p.
+
+### Streaming
+
+Playback uses HLS: request `index.m3u8` for the desired resolution, then the
+`.ts` segments it references.
+""",
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 AUTH_USER_MODEL = "auth_app.User"
