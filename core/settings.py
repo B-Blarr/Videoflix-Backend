@@ -188,7 +188,17 @@ HLS_RESOLUTIONS = [480, 720, 1080]
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", default="localhost")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", default=587))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", default="True") == "True"
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", default="False") == "True"
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL", default="noreply@videoflix.local")
+
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", default="http://127.0.0.1:5500")
 
