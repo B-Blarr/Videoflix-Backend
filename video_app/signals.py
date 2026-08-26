@@ -12,7 +12,7 @@ def start_converting_video(sender, instance, created, **kwargs):
     if not created:
         return
     def enqueue_conversion():
-        django_rq.get_queue("default").enqueue(convert_video, instance.id)
+        django_rq.get_queue("low").enqueue(convert_video, instance.id)
 
     transaction.on_commit(enqueue_conversion)
 

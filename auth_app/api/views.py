@@ -1,5 +1,6 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
+import django_rq
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.views import APIView
@@ -126,7 +127,7 @@ class PasswordResetView(APIView):
         serializer.is_valid(raise_exception=True)
         user = User.objects.filter(email=serializer.validated_data["email"]).first()
         if user is not None:
-            send_password_reset_email(user)
+            django_rq.get_queue("high").enqueue(send_password_reset_email, user.id)
         return Response({"detail": PASSWORD_RESET_DETAIL})
 
 

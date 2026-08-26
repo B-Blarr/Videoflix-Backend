@@ -32,7 +32,8 @@ def attach_logo(mail):
 
 
 
-def send_activation_email(user):
+def send_activation_email(user_id):
+    user = User.objects.get(pk=user_id)
     link = build_activation_link(user)
     html_body = render_to_string('email_activation.html', {'link': link, 'email': user.email})
     mail = EmailMultiAlternatives(
@@ -59,7 +60,8 @@ def build_password_reset_link(user):
     return f"{settings.FRONTEND_URL}/pages/auth/confirm_password.html?uid={uidb64}&token={token}"
 
 
-def send_password_reset_email(user):
+def send_password_reset_email(user_id):
+    user = User.objects.get(pk=user_id)
     link = build_password_reset_link(user)
     html_body = render_to_string('reset_password.html', {'link': link, 'email': user.email})
     mail = EmailMultiAlternatives(
