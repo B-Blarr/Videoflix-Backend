@@ -1,4 +1,7 @@
+import os
+
 from django.conf import settings
+from email.mime.image import MIMEImage
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives
@@ -52,3 +55,14 @@ def send_password_reset_email(user):
         recipient_list=[user.email],
         fail_silently=False,
     )
+
+
+def attach_logo(mail):
+    """Attach the logo so it can be displayed inside the email body."""
+    path = os.path.join(settings.BASE_DIR, 'auth_app', 'static', 'logo.png')
+    with open(path, 'rb') as logo:
+        image = MIMEImage(logo.read())
+    image.add_header('Content-ID', '<logo>')
+    image.add_header('Content-Disposition', 'inline', filename='logo.png')
+    mail.attach(image)
+    mail.mixed_subtype = 'related'
