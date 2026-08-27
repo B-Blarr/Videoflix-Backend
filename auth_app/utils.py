@@ -8,6 +8,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+import django_rq
 
 
 User = get_user_model()
@@ -84,3 +85,8 @@ def send_password_reset_email(user_id):
     mail.send()
 
 
+def enqueue_password_reset_email(email):
+    """Queue a reset email if an account with that address exists."""
+    user = User.objects.filter(email=email).first()
+    if user is not None:
+        django_rq.get_queue('high').enqueue(send_password_reset_email, user.id)

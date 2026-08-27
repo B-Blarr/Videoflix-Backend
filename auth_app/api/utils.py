@@ -14,6 +14,13 @@ def set_auth_cookie(response, key, token):
     )
 
 
+def clear_auth_cookies(response):
+    """Remove both JWT cookies from the given response."""
+    response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
+    return response
+
+
 def unauthorized(detail):
     """Return a 401 response with the given detail message."""
     return Response({'detail': detail}, status=status.HTTP_401_UNAUTHORIZED)

@@ -1,6 +1,4 @@
 from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth import get_user_model
-import django_rq
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.views import APIView
@@ -11,10 +9,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .serializers import RegistrationSerializer, CookieTokenObtainPairSerializer,\
     PasswordResetSerializer, PasswordConfirmSerializer
-from .utils import set_auth_cookie, unauthorized, bad_request
-from auth_app.utils import get_user_from_uidb64, send_password_reset_email
-
-User = get_user_model()
+from .utils import (set_auth_cookie, clear_auth_cookies, unauthorized,
+                    bad_request)
+from auth_app.utils import get_user_from_uidb64, enqueue_password_reset_email
 
 LOGOUT_DETAIL = (
     "Logout successful! All tokens will be deleted. "
@@ -110,12 +107,11 @@ class LogoutView(APIView):
         try:
             RefreshToken(refresh_token).blacklist()
         except TokenError:
-            return unauthorized('User is already logged out!')
+            return clear_auth_cookies(
+                unauthorized('User is already logged out!'))
         response = Response(
             {'detail': LOGOUT_DETAIL}, status=status.HTTP_200_OK)
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
-        return response
+        return clear_auth_cookies(response)
 
 
 class PasswordResetView(APIView):
@@ -124,11 +120,9 @@ class PasswordResetView(APIView):
 
     def post(self, request):
         serializer = PasswordResetSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = User.objects.filter(email=serializer.validated_data["email"]).first()
-        if user is not None:
-            django_rq.get_queue("high").enqueue(send_password_reset_email, user.id)
-        return Response({"detail": PASSWORD_RESET_DETAIL})
+        if serializer.is_valid():
+            enqueue_password_reset_email(serializer.validated_data['email'])
+        return Response({'detail': PASSWORD_RESET_DETAIL})
 
 
 class PasswordConfirmView(APIView):

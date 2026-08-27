@@ -296,6 +296,13 @@ every following request:
 The times above are the lifetimes of the **tokens**. The cookies themselves are
 session cookies and are dropped when the browser is closed.
 
+The activation link and the password reset link carry a signed token as
+well. Both are built by Django's `default_token_generator` and stop working
+after **24 hours**, set through `PASSWORD_RESET_TIMEOUT` in
+`core/settings.py`. The reset email names that period in its text, so the
+setting and the wording in `auth_app/templates/reset_password.html` have to
+be changed together.
+
 Because the cookies are `HttpOnly`, JavaScript cannot read them. A frontend
 therefore has to send its requests with `credentials: "include"`, and its
 origin has to be listed in `CORS_ALLOWED_ORIGINS`.

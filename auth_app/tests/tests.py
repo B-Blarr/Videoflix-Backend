@@ -125,6 +125,8 @@ class LogoutTests(APITestCase):
         response = self.client.post(reverse('logout'))
         self.assertEqual(
             response.status_code, status.HTTP_401_UNAUTHORIZED, response.data)
+        self.assertEqual(response.cookies['access_token'].value, '')
+        self.assertEqual(response.cookies['refresh_token'].value, '')
 
 
 class TokenRefreshTests(APITestCase):
@@ -211,11 +213,22 @@ class PasswordResetTests(APITestCase):
         self.assertIn('confirm_password.html', mail.outbox[0].body)        
 
     def test_password_reset_unknown_email_returns_200(self):
-        response = self.client.post(
-            self.url, {'email': 'unknown@unknown.de'}, format='json')
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                self.url, {'email': 'unknown@unknown.de'}, format='json')
         self.assertEqual(
             response.status_code, status.HTTP_200_OK, response.data)
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_password_reset_invalid_input_returns_200(self):
+        for payload in ({}, {'email': 'kaputt'}):
+            with self.subTest(payload=payload):
+                with self.captureOnCommitCallbacks(execute=True):
+                    response = self.client.post(
+                        self.url, payload, format='json')
+                self.assertEqual(
+                    response.status_code, status.HTTP_200_OK, response.data)
+                self.assertEqual(len(mail.outbox), 0)
 
 class PasswordConfirmTests(APITestCase):
     def setUp(self):
