@@ -1,6 +1,7 @@
 import json, os, shutil
 import subprocess
 from django.conf import settings
+from django.core.files.storage import default_storage
 
 from .models import Video
 
@@ -97,17 +98,14 @@ def save_conversion_result(video):
 
     
 def run_conversion(video):
+    """Build the thumbnail and every HLS variant from scratch."""
     info = probe_video(video.video_file.path)
-    base_dir = os.path.join(settings.MEDIA_ROOT, "videos", str(video.id))
-    heights = []
-    for height in settings.HLS_RESOLUTIONS:
-        if height <= info['height']:
-            heights.append(height)
+    base_dir = hls_dir(video.id)
+    shutil.rmtree(base_dir, ignore_errors=True)
     create_thumbnail(video, info['duration'])
-    for height in heights:
+    for height in settings.HLS_RESOLUTIONS:
         encode_variant(video.video_file.path, base_dir, height, info['fps'])
-
-    video.available_resolutions = heights
+    video.available_resolutions = list(settings.HLS_RESOLUTIONS)
     video.duration = info['duration']
 
 
@@ -126,6 +124,7 @@ def build_thumbnail_command(input_path, output_path, position):
         '-i', input_path,
         '-vf', 'thumbnail=300,scale=-2:360',
         '-frames:v', '1',
+        '-update', '1',
         output_path,
     ]    
 
@@ -150,6 +149,12 @@ def hls_file_path(video_id, resolution, filename):
         return None
     path = os.path.join(hls_dir(video_id), resolution, filename)
     return path if os.path.isfile(path) else None   
+
+
+def drop_replaced_source(name):
+    """Delete a source file that a new upload replaced."""
+    if name:
+        default_storage.delete(name)
 
 
 def remove_video_files(video):
