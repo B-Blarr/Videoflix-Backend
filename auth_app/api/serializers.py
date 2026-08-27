@@ -1,3 +1,5 @@
+"""Serializers for registration, login and password reset."""
+
 from django.contrib.auth import password_validation, get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -10,10 +12,12 @@ User = get_user_model()
 GENERIC_INPUT_ERROR = "Please check your input and try again."
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """Create an inactive account that an activation mail unlocks."""
 
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
+        """Write-only password, generic message for a taken email."""
         model = User
         fields = ['email', 'password', 'confirmed_password']
         extra_kwargs = {
@@ -31,11 +35,13 @@ class RegistrationSerializer(serializers.ModelSerializer):
         }
 
     def validate_password(self, value):
+        """Run Django's password validators on the raw password."""
 
         password_validation.validate_password(value)
         return value
 
     def validate(self, attrs):
+        """Reject the payload when the two passwords differ."""
 
         if attrs['password'] != attrs['confirmed_password']:
             raise serializers.ValidationError(
@@ -43,6 +49,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        """Create the user inactive, with the email as username too."""
 
         pw = validated_data['password']
         account = User(
@@ -56,8 +63,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class CookieTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Token serializer that adds the user block to the answer."""
 
     def validate(self, attrs):
+        """Return the token pair plus id and email as "username"."""
  
         data = super().validate(attrs)
         data['user'] = {
@@ -68,19 +77,25 @@ class CookieTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class PasswordResetSerializer(serializers.Serializer):
+    """Take only the email address a reset link should go to."""
+
     email = serializers.EmailField()
 
 
 class PasswordConfirmSerializer(serializers.Serializer):
+    """Take and check the new password behind a reset link."""
+
     new_password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
 
     def validate_new_password(self, value):
+        """Run Django's password validators on the new password."""
 
         password_validation.validate_password(value)
         return value
 
     def validate(self, attrs):
+        """Reject the payload when the two passwords differ."""
 
         if attrs['new_password'] != attrs['confirm_password']:
             raise serializers.ValidationError(
@@ -109,7 +124,7 @@ class LoginResponseSerializer(serializers.Serializer):
 
 
 class RefreshResponseSerializer(serializers.Serializer):
-    """Documents the refresh answer, which adds "detail" to the access token."""
+    """Documents the refresh answer, which adds "detail" to the token."""
 
     detail = serializers.CharField()
     access = serializers.CharField()

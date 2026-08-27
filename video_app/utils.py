@@ -1,3 +1,5 @@
+"""FFmpeg helpers for probing, thumbnails and HLS conversion."""
+
 import json, os, shutil
 import subprocess
 from django.conf import settings
@@ -12,6 +14,7 @@ class VideoProbeError(Exception):
 
 
 def probe_video(path):
+    """Return width, height, fps and duration of the source file."""
     result = run_ffprobe(path)
     data = json.loads(result.stdout)
     if not data.get('streams'):
@@ -26,6 +29,7 @@ def probe_video(path):
 
 
 def run_ffprobe(path):
+    """Run ffprobe and raise VideoProbeError on any failure."""
     try:
         result = subprocess.run(
             [
@@ -47,11 +51,13 @@ def run_ffprobe(path):
 
 
 def parse_fps(raw):
+    """Turn a rational frame rate such as 30000/1001 into a float."""
     num, den = raw.split('/')
     return int(num) / int(den)
 
 
 def build_hls_command(input_path, output_dir, height, fps):
+    """Build the ffmpeg call for one HLS variant with a fixed GOP."""
     gop = round(fps * settings.HLS_GOP_SECONDS)
 
     return [
@@ -110,6 +116,7 @@ def run_conversion(video):
 
 
 def encode_variant(input_path, base_dir, height, fps):
+    """Encode one resolution, even when it upscales the source."""
     output_dir = os.path.join(base_dir, f'{height}p')
     os.makedirs(output_dir, exist_ok=True)
     cmd = build_hls_command(input_path, output_dir, height, fps)
@@ -117,6 +124,7 @@ def encode_variant(input_path, base_dir, height, fps):
 
 
 def build_thumbnail_command(input_path, output_path, position):
+    """Build the ffmpeg call that grabs a single frame as JPEG."""
 
     return [
         'ffmpeg', '-y',
@@ -130,6 +138,7 @@ def build_thumbnail_command(input_path, output_path, position):
 
 
 def create_thumbnail(video, duration):
+    """Grab a frame from the middle of the video as thumbnail."""
     rel_path = f'thumbnails/{video.id}.jpg'
     abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
     os.makedirs(os.path.dirname(abs_path), exist_ok=True)
@@ -158,7 +167,7 @@ def drop_replaced_source(name):
 
 
 def hls_segment_path(video_id, resolution, segment):
-    """Return the path of an HLS segment, or None if the name is not one."""
+    """Return the segment path, or None if it is not a readable .ts file."""
     if not segment.endswith('.ts'):
         return None
     return hls_file_path(video_id, resolution, segment)

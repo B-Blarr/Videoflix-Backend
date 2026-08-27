@@ -1,3 +1,5 @@
+"""Views for registration, activation, login and password reset."""
+
 from django.contrib.auth.tokens import default_token_generator
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny
@@ -29,11 +31,13 @@ PASSWORD_CONFIRM_DETAIL = ("Your Password has been successfully reset.")
 
 
 class RegistrationView(GenericAPIView):
+    """Register an inactive account and return its activation token."""
 
     permission_classes = [AllowAny]
     serializer_class = RegistrationSerializer
 
     def post(self, request):
+        """Create the account and answer with its id, email and token."""
     
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -48,10 +52,12 @@ class RegistrationView(GenericAPIView):
 
 
 class ActivateView(APIView):
+    """Activate an account from the link in the activation mail."""
 
     permission_classes = [AllowAny]
 
     def get(self, request, uidb64, token):
+        """Activate the account, answering under "message" not "detail"."""
         user = get_user_from_uidb64(uidb64)
         if user is None or not default_token_generator.check_token(user, token):
             return Response(
@@ -65,10 +71,12 @@ class ActivateView(APIView):
 
 @extend_schema(responses=LoginResponseSerializer)
 class CookieTokenObtainPairView(TokenObtainPairView):
+    """Log in by email and hand the tokens over as cookies."""
 
     serializer_class = CookieTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
+        """Set both token cookies and replace the body per contract."""
 
         response = super().post(request, *args, **kwargs)
         user = response.data.get('user')
@@ -85,8 +93,10 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 
 @extend_schema(request=None, responses=RefreshResponseSerializer)
 class CookieTokenRefreshView(TokenRefreshView):
+    """Refresh the access token from the refresh_token cookie."""
 
     def post(self, request, *args, **kwargs):
+        """Issue a new access token and refresh its cookie."""
 
         refresh_token = request.COOKIES.get('refresh_token')
         if refresh_token is None:
@@ -105,10 +115,12 @@ class CookieTokenRefreshView(TokenRefreshView):
 
 @extend_schema(request=None, responses=DetailResponseSerializer)
 class LogoutView(APIView):
+    """Log out by blacklisting the refresh token from the cookie."""
 
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
+        """Blacklist the refresh token and drop both cookies."""
         refresh_token = request.COOKIES.get('refresh_token')
         if refresh_token is None:
             return bad_request('Refresh token not found!')
@@ -123,11 +135,13 @@ class LogoutView(APIView):
 
 
 class PasswordResetView(GenericAPIView):
+    """Send a reset link without revealing whether the account exists."""
 
     permission_classes = [AllowAny]
     serializer_class = PasswordResetSerializer
 
     def post(self, request):
+        """Queue the mail if valid, but answer 200 either way."""
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             enqueue_password_reset_email(serializer.validated_data['email'])
@@ -135,11 +149,13 @@ class PasswordResetView(GenericAPIView):
 
 
 class PasswordConfirmView(GenericAPIView):
+    """Set a new password for the user behind a reset link."""
 
     permission_classes = [AllowAny]
     serializer_class = PasswordConfirmSerializer
 
     def post(self, request, uidb64, token):
+        """Set the new password, or answer 400 if the link is stale."""
         user = get_user_from_uidb64(uidb64)
         if user is None or not default_token_generator.check_token(user, token):
             return bad_request("Invalid or expired reset link.")

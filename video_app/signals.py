@@ -1,3 +1,5 @@
+"""Signal handlers that start and clean up the HLS conversion."""
+
 import django_rq
 from django.conf import settings
 from django.db import transaction
@@ -25,6 +27,7 @@ def start_converting_video(sender, instance, created, **kwargs):
         return
 
     def enqueue_conversion():
+        """Enqueue the job on the low queue once the row is stored."""
         django_rq.get_queue('low').enqueue(
             convert_video, instance.id,
             job_timeout=settings.HLS_JOB_TIMEOUT)
@@ -35,4 +38,5 @@ def start_converting_video(sender, instance, created, **kwargs):
 
 @receiver(post_delete, sender=Video)
 def delete_video_files(sender, instance, **kwargs):
+    """Delete the HLS files, the upload and the thumbnail of the video."""
     remove_video_files(instance)

@@ -1,3 +1,5 @@
+"""Helpers for activation and reset links and the HTML emails."""
+
 import os
 
 from django.conf import settings
@@ -24,6 +26,7 @@ PASSWORD_RESET_TEXT = (
 
 
 def build_activation_link(user):
+    """Build the activation link that points at the frontend page."""
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     return f"{settings.FRONTEND_URL}/pages/auth/activate.html?uid={uidb64}&token={token}"
@@ -43,6 +46,7 @@ def attach_logo(mail):
 
 
 def send_activation_email(user_id):
+    """Send the activation mail; runs in the RQ worker by user id."""
     user = User.objects.get(pk=user_id)
     link = build_activation_link(user)
     html_body = render_to_string('email_activation.html', {'link': link, 'email': user.email})
@@ -57,6 +61,7 @@ def send_activation_email(user_id):
 
 
 def get_user_from_uidb64(uidb64):
+    """Return the user for a base64 uid, or None if it is invalid."""
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         return User.objects.get(pk=uid)
@@ -65,12 +70,14 @@ def get_user_from_uidb64(uidb64):
 
 
 def build_password_reset_link(user):
+    """Build the reset link that points at the frontend page."""
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     return f"{settings.FRONTEND_URL}/pages/auth/confirm_password.html?uid={uidb64}&token={token}"
 
 
 def send_password_reset_email(user_id):
+    """Send the reset mail; runs in the RQ worker by user id."""
     user = User.objects.get(pk=user_id)
     link = build_password_reset_link(user)
     html_body = render_to_string('reset_password.html', {'link': link})
