@@ -157,6 +157,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Lifetime of every token built by default_token_generator. It covers the
+# password reset link and the account activation link alike.
+# https://docs.djangoproject.com/en/stable/ref/settings/#password-reset-timeout
+
+PASSWORD_RESET_TIMEOUT = 24 * 60 * 60
+
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
