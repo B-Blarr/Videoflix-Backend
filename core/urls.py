@@ -33,4 +33,7 @@ urlpatterns = [
         url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(
         url_name='schema'), name='redoc'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + static(
+    f"{settings.MEDIA_URL}thumbnails/",
+    document_root=settings.MEDIA_ROOT / "thumbnails",
+)
