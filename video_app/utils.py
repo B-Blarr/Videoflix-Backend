@@ -157,6 +157,13 @@ def drop_replaced_source(name):
         default_storage.delete(name)
 
 
+def hls_segment_path(video_id, resolution, segment):
+    """Return the path of an HLS segment, or None if the name is not one."""
+    if not segment.endswith('.ts'):
+        return None
+    return hls_file_path(video_id, resolution, segment)
+
+
 def remove_video_files(video):
     """Delete the HLS folder, the source file and the thumbnail of a video."""
     shutil.rmtree(hls_dir(video.id), ignore_errors=True)

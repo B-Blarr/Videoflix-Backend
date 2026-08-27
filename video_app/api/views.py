@@ -6,7 +6,7 @@ from rest_framework import generics
 from rest_framework.views import APIView
 
 from video_app.models import Video
-from video_app.utils import hls_file_path
+from video_app.utils import hls_file_path, hls_segment_path
 from .serializers import VideoSerializer
 
 
@@ -35,7 +35,7 @@ class HLSSegmentView(APIView):
 
     def get(self, request, movie_id, resolution, segment):
         get_object_or_404(Video, pk=movie_id)
-        path = hls_file_path(movie_id, resolution, segment)
+        path = hls_segment_path(movie_id, resolution, segment)
         if path is None:
             raise Http404
         return FileResponse(open(path, 'rb'), content_type='video/MP2T')

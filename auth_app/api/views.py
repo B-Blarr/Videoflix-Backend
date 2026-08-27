@@ -1,14 +1,19 @@
 from django.contrib.auth.tokens import default_token_generator
+from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .serializers import RegistrationSerializer, CookieTokenObtainPairSerializer,\
-    PasswordResetSerializer, PasswordConfirmSerializer
+from .serializers import (RegistrationSerializer,
+                          CookieTokenObtainPairSerializer,
+                          PasswordResetSerializer, PasswordConfirmSerializer,
+                          DetailResponseSerializer, LoginResponseSerializer,
+                          RefreshResponseSerializer)
 from .utils import (set_auth_cookie, clear_auth_cookies, unauthorized,
                     bad_request)
 from auth_app.utils import get_user_from_uidb64, enqueue_password_reset_email
@@ -23,14 +28,14 @@ PASSWORD_RESET_DETAIL = ("An email has been sent to reset your password.")
 PASSWORD_CONFIRM_DETAIL = ("Your Password has been successfully reset.")
 
 
-class RegistrationView(APIView):
+class RegistrationView(GenericAPIView):
 
     permission_classes = [AllowAny]
+    serializer_class = RegistrationSerializer
 
     def post(self, request):
     
-        serializer = RegistrationSerializer(data=request.data)
-
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(
@@ -58,6 +63,7 @@ class ActivateView(APIView):
         return Response({"message": "Account successfully activated."})
 
 
+@extend_schema(responses=LoginResponseSerializer)
 class CookieTokenObtainPairView(TokenObtainPairView):
 
     serializer_class = CookieTokenObtainPairSerializer
@@ -77,6 +83,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         return response
 
 
+@extend_schema(request=None, responses=RefreshResponseSerializer)
 class CookieTokenRefreshView(TokenRefreshView):
 
     def post(self, request, *args, **kwargs):
@@ -96,6 +103,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         return response    
 
 
+@extend_schema(request=None, responses=DetailResponseSerializer)
 class LogoutView(APIView):
 
     permission_classes = [AllowAny]
@@ -114,26 +122,28 @@ class LogoutView(APIView):
         return clear_auth_cookies(response)
 
 
-class PasswordResetView(APIView):
+class PasswordResetView(GenericAPIView):
 
     permission_classes = [AllowAny]
+    serializer_class = PasswordResetSerializer
 
     def post(self, request):
-        serializer = PasswordResetSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             enqueue_password_reset_email(serializer.validated_data['email'])
         return Response({'detail': PASSWORD_RESET_DETAIL})
 
 
-class PasswordConfirmView(APIView):
+class PasswordConfirmView(GenericAPIView):
 
     permission_classes = [AllowAny]
+    serializer_class = PasswordConfirmSerializer
 
     def post(self, request, uidb64, token):
         user = get_user_from_uidb64(uidb64)
         if user is None or not default_token_generator.check_token(user, token):
             return bad_request("Invalid or expired reset link.")
-        serializer = PasswordConfirmSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user.set_password(serializer.validated_data["new_password"])
         user.save()

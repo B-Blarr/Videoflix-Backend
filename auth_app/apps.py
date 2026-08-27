@@ -6,3 +6,4 @@ class AuthAppConfig(AppConfig):
 
     def ready(self):
         from . import signals
+        from .api import schema

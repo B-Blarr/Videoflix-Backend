@@ -10,6 +10,9 @@ urlpatterns = [
         'video/<int:movie_id>/<str:resolution>/index.m3u8', 
         HLSPlaylistView.as_view(), name='video_playlist'),
     path(
-        'video/<int:movie_id>/<str:resolution>/<str:segment>/', 
+        'video/<int:movie_id>/<str:resolution>/<str:segment>/',
         HLSSegmentView.as_view(), name='video_segment'),
+    path(
+        'video/<int:movie_id>/<str:resolution>/<str:segment>',
+        HLSSegmentView.as_view()),
 ]

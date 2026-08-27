@@ -86,3 +86,30 @@ class PasswordConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {'confirm_password': 'Passwords do not match'})
         return attrs
+
+
+class DetailResponseSerializer(serializers.Serializer):
+    """Documents the plain {"detail": ...} answers."""
+
+    detail = serializers.CharField()
+
+
+class LoginUserSerializer(serializers.Serializer):
+    """The user block of the login answer. "username" carries the email."""
+
+    id = serializers.IntegerField()
+    username = serializers.EmailField()
+
+
+class LoginResponseSerializer(serializers.Serializer):
+    """Documents the login answer, which replaces the simplejwt token pair."""
+
+    detail = serializers.CharField()
+    user = LoginUserSerializer()
+
+
+class RefreshResponseSerializer(serializers.Serializer):
+    """Documents the refresh answer, which adds "detail" to the access token."""
+
+    detail = serializers.CharField()
+    access = serializers.CharField()
