@@ -195,6 +195,14 @@ HLS_PRESET = "fast"
 HLS_AUDIO_BITRATE = "128k"
 HLS_RESOLUTIONS = [480, 720, 1080]
 
+# Timeouts are emergency brakes against stuck ffmpeg processes, not capacity
+# planning. Measured in this container, 1080p needs roughly 0.7 seconds of CPU
+# time per second of video, so two hours cover a movie of about three hours.
+
+HLS_ENCODE_TIMEOUT = 2 * 60 * 60
+HLS_THUMBNAIL_TIMEOUT = 60
+HLS_JOB_TIMEOUT = len(HLS_RESOLUTIONS) * HLS_ENCODE_TIMEOUT + 30 * 60
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

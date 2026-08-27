@@ -1,4 +1,5 @@
 import django_rq
+from django.conf import settings
 from django.db import transaction
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete
@@ -12,7 +13,9 @@ def start_converting_video(sender, instance, created, **kwargs):
     if not created:
         return
     def enqueue_conversion():
-        django_rq.get_queue("low").enqueue(convert_video, instance.id)
+        django_rq.get_queue('low').enqueue(
+            convert_video, instance.id,
+            job_timeout=settings.HLS_JOB_TIMEOUT)
 
     transaction.on_commit(enqueue_conversion)
 

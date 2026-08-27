@@ -73,16 +73,27 @@ def build_hls_command(input_path, output_dir, height, fps):
 
 
 def convert_video(video_id):
+    """Convert one video to HLS and keep its status in sync."""
     video = Video.objects.get(id=video_id)
-    video.status = "processing"
-    video.save()
+    Video.objects.filter(pk=video.pk).update(status='processing')
     try:
         run_conversion(video)
         video.status = 'done'
-    except(VideoProbeError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    except Exception:
         video.status = 'failed'
+        raise
     finally:
-        video.save()
+        save_conversion_result(video)
+
+
+def save_conversion_result(video):
+    """Write the job's result back, but only if the video still exists."""
+    Video.objects.filter(pk=video.pk).update(
+        status=video.status,
+        thumbnail=video.thumbnail.name,
+        duration=video.duration,
+        available_resolutions=video.available_resolutions,
+    )
 
     
 def run_conversion(video):
@@ -104,7 +115,7 @@ def encode_variant(input_path, base_dir, height, fps):
     output_dir = os.path.join(base_dir, f'{height}p')
     os.makedirs(output_dir, exist_ok=True)
     cmd = build_hls_command(input_path, output_dir, height, fps)
-    subprocess.run(cmd, check=True, timeout=3600)
+    subprocess.run(cmd, check=True, timeout=settings.HLS_ENCODE_TIMEOUT)
 
 
 def build_thumbnail_command(input_path, output_path, position):
@@ -124,7 +135,7 @@ def create_thumbnail(video, duration):
     abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
     os.makedirs(os.path.dirname(abs_path), exist_ok=True)
     cmd = build_thumbnail_command(video.video_file.path, abs_path, duration / 2)
-    subprocess.run(cmd, check=True, timeout=60)
+    subprocess.run(cmd, check=True, timeout=settings.HLS_THUMBNAIL_TIMEOUT)
     video.thumbnail = rel_path
 
 

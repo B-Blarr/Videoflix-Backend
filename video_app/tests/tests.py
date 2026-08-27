@@ -129,7 +129,8 @@ class ConvertVideoTests(TestCase):
     @patch('video_app.utils.probe_video')
     def test_convert_video_sets_status_failed(self, mock_probe):
         mock_probe.side_effect = VideoProbeError('kaputt')
-        convert_video(self.video.id)
+        with self.assertRaises(VideoProbeError):
+            convert_video(self.video.id)
         self.video.refresh_from_db()
         self.assertEqual(self.video.status, 'failed')
 
