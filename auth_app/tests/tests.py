@@ -105,10 +105,10 @@ class LoginTests(APITestCase):
 
 class LogoutTests(APITestCase):
     """Tests for logging out and invalidating the refresh token."""
-  
+
     def setUp(self):
         """Create an account and log it in so the cookies are set."""
-      
+
         self.user = User.objects.create_user(
             username='test@test.de', password='SuperSecret123!',
             email='test@test.de')
@@ -117,7 +117,7 @@ class LogoutTests(APITestCase):
             {'email': 'test@test.de', 'password': 'SuperSecret123!'},
             format='json',
         )
-        
+
     def test_logout(self):
         """Logging out clears both auth cookies and returns a detail."""
 
@@ -131,7 +131,7 @@ class LogoutTests(APITestCase):
 
     def test_user_already_logged_out_returns_401(self):
         """Replaying the cookies of a logged out session is rejected."""
-       
+
         access = self.client.cookies['access_token'].value
         refresh = self.client.cookies['refresh_token'].value
         self.client.post(reverse('logout'))
@@ -146,8 +146,8 @@ class LogoutTests(APITestCase):
 
 class TokenRefreshTests(APITestCase):
     """Tests for refreshing the access token from the cookie."""
-    
-    def setUp(self):     
+
+    def setUp(self):
         """Create an account and log it in to get a refresh cookie."""
         self.user = User.objects.create_user(
             username='test@test.de', password='SuperSecret123!',
@@ -180,7 +180,7 @@ class TokenRefreshTests(APITestCase):
         client.cookies['refresh_token'] = 'not-a-valid-token'
         response = client.post(reverse('token_refresh'))
         self.assertEqual(
-            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data)        
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data)
 
 
 class ActivateTests(APITestCase):
@@ -200,7 +200,8 @@ class ActivateTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(
             response.status_code, status.HTTP_200_OK, response.data)
-        self.assertEqual(response.data['message'], 'Account successfully activated.')
+        self.assertEqual(
+            response.data['message'], 'Account successfully activated.')
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
 
@@ -238,7 +239,7 @@ class PasswordResetTests(APITestCase):
         self.assertEqual(
             response.status_code, status.HTTP_200_OK, response.data)
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn('confirm_password.html', mail.outbox[0].body)        
+        self.assertIn('confirm_password.html', mail.outbox[0].body)
 
     def test_password_reset_unknown_email_returns_200(self):
         """An unknown address still gets 200 and no mail is sent."""
@@ -259,6 +260,7 @@ class PasswordResetTests(APITestCase):
                 self.assertEqual(
                     response.status_code, status.HTTP_200_OK, response.data)
                 self.assertEqual(len(mail.outbox), 0)
+
 
 class PasswordConfirmTests(APITestCase):
     """Tests for setting a new password from the emailed link."""
@@ -282,4 +284,4 @@ class PasswordConfirmTests(APITestCase):
         self.assertEqual(
             response.status_code, status.HTTP_200_OK, response.data)
         self.user.refresh_from_db()
-        self.assertTrue(self.user.check_password('MynewSecret123!'))    
+        self.assertTrue(self.user.check_password('MynewSecret123!'))

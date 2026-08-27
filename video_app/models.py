@@ -19,7 +19,8 @@ class Video(models.Model):
     video_file = models.FileField(upload_to='videos/')
     status = models.CharField(
         max_length=20, choices=Status.choices, default='pending')
-    thumbnail = models.FileField(upload_to='thumbnails/', blank=True, null=True)
+    thumbnail = models.FileField(
+        upload_to='thumbnails/', blank=True, null=True)
     category = models.CharField(max_length=200)
     duration = models.FloatField(null=True, blank=True)
     available_resolutions = models.JSONField(default=list, blank=True)
@@ -31,4 +32,4 @@ class Video(models.Model):
     def __str__(self):
         """Return the title so the admin lists videos by name."""
         return self.title
-    
+

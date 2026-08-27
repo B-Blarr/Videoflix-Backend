@@ -1,7 +1,5 @@
 """Views for the video list and the HLS playlist and segments."""
 
-import os
-
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import generics

@@ -11,6 +11,7 @@ User = get_user_model()
 
 GENERIC_INPUT_ERROR = "Please check your input and try again."
 
+
 class RegistrationSerializer(serializers.ModelSerializer):
     """Create an inactive account that an activation mail unlocks."""
 
@@ -67,7 +68,7 @@ class CookieTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         """Return the token pair plus id and email as "username"."""
- 
+
         data = super().validate(attrs)
         data['user'] = {
             'id': self.user.id,

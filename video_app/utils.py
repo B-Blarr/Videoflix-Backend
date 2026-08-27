@@ -70,10 +70,10 @@ def build_hls_command(input_path, output_dir, height, fps):
         '-g', str(gop),
         '-keyint_min', str(gop),
         '-sc_threshold', '0',
-        '-c:a', 'aac', 
+        '-c:a', 'aac',
         '-b:a', settings.HLS_AUDIO_BITRATE,
         '-hls_time', str(settings.HLS_SEGMENT_SECONDS),
-        '-hls_playlist_type', 'vod', 
+        '-hls_playlist_type', 'vod',
         '-hls_segment_filename', os.path.join(output_dir, 'seg%03d.ts'),
         os.path.join(output_dir, 'index.m3u8'),
     ]
@@ -102,7 +102,7 @@ def save_conversion_result(video):
         available_resolutions=video.available_resolutions,
     )
 
-    
+
 def run_conversion(video):
     """Build the thumbnail and every HLS variant from scratch."""
     info = probe_video(video.video_file.path)
@@ -134,7 +134,7 @@ def build_thumbnail_command(input_path, output_path, position):
         '-frames:v', '1',
         '-update', '1',
         output_path,
-    ]    
+    ]
 
 
 def create_thumbnail(video, duration):
@@ -142,7 +142,8 @@ def create_thumbnail(video, duration):
     rel_path = f'thumbnails/{video.id}.jpg'
     abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
     os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-    cmd = build_thumbnail_command(video.video_file.path, abs_path, duration / 2)
+    cmd = build_thumbnail_command(
+        video.video_file.path, abs_path, duration / 2)
     subprocess.run(cmd, check=True, timeout=settings.HLS_THUMBNAIL_TIMEOUT)
     video.thumbnail = rel_path
 
@@ -157,7 +158,7 @@ def hls_file_path(video_id, resolution, filename):
     if resolution not in {f'{height}p' for height in settings.HLS_RESOLUTIONS}:
         return None
     path = os.path.join(hls_dir(video_id), resolution, filename)
-    return path if os.path.isfile(path) else None   
+    return path if os.path.isfile(path) else None
 
 
 def drop_replaced_source(name):
@@ -177,4 +178,4 @@ def remove_video_files(video):
     """Delete the HLS folder, the source file and the thumbnail of a video."""
     shutil.rmtree(hls_dir(video.id), ignore_errors=True)
     video.video_file.delete(save=False)
-    video.thumbnail.delete(save=False)    
+    video.thumbnail.delete(save=False)

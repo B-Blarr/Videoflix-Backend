@@ -9,7 +9,8 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView)
 
 from .serializers import (RegistrationSerializer,
                           CookieTokenObtainPairSerializer,
@@ -38,7 +39,7 @@ class RegistrationView(GenericAPIView):
 
     def post(self, request):
         """Create the account and answer with its id, email and token."""
-    
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -59,7 +60,8 @@ class ActivateView(APIView):
     def get(self, request, uidb64, token):
         """Activate the account, answering under "message" not "detail"."""
         user = get_user_from_uidb64(uidb64)
-        if user is None or not default_token_generator.check_token(user, token):
+        if (user is None
+                or not default_token_generator.check_token(user, token)):
             return Response(
                 {"message": "Activation failed."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -110,7 +112,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         response = Response({'detail': 'Token refreshed', 'access': access})
         set_auth_cookie(response, 'access_token', access)
 
-        return response    
+        return response
 
 
 @extend_schema(request=None, responses=DetailResponseSerializer)
@@ -157,7 +159,8 @@ class PasswordConfirmView(GenericAPIView):
     def post(self, request, uidb64, token):
         """Set the new password, or answer 400 if the link is stale."""
         user = get_user_from_uidb64(uidb64)
-        if user is None or not default_token_generator.check_token(user, token):
+        if (user is None
+                or not default_token_generator.check_token(user, token)):
             return bad_request("Invalid or expired reset link.")
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from video_app.models import Video
 
+
 class VideoSerializer(serializers.ModelSerializer):
     """Video payload of the list endpoint, thumbnail included."""
 
@@ -15,7 +16,7 @@ class VideoSerializer(serializers.ModelSerializer):
         """Expose the fields in the order the endpoint doc lists them."""
         model = Video
         fields = [
-            'id', 'created_at', 'title', 'description', 'thumbnail_url', 
+            'id', 'created_at', 'title', 'description', 'thumbnail_url',
             'category']
 
     @extend_schema_field(OpenApiTypes.URI)

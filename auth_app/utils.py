@@ -29,7 +29,8 @@ def build_activation_link(user):
     """Build the activation link that points at the frontend page."""
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    return f"{settings.FRONTEND_URL}/pages/auth/activate.html?uid={uidb64}&token={token}"
+    return (f"{settings.FRONTEND_URL}/pages/auth/activate.html"
+            f"?uid={uidb64}&token={token}")
 
 
 def attach_logo(mail):
@@ -44,12 +45,12 @@ def attach_logo(mail):
     mail.attach(image)
 
 
-
 def send_activation_email(user_id):
     """Send the activation mail; runs in the RQ worker by user id."""
     user = User.objects.get(pk=user_id)
     link = build_activation_link(user)
-    html_body = render_to_string('email_activation.html', {'link': link, 'email': user.email})
+    html_body = render_to_string(
+        'email_activation.html', {'link': link, 'email': user.email})
     mail = EmailMultiAlternatives(
         subject='Confirm your email',
         body=f'Please confirm your email address: {link}',
@@ -73,7 +74,8 @@ def build_password_reset_link(user):
     """Build the reset link that points at the frontend page."""
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    return f"{settings.FRONTEND_URL}/pages/auth/confirm_password.html?uid={uidb64}&token={token}"
+    return (f"{settings.FRONTEND_URL}/pages/auth/confirm_password.html"
+            f"?uid={uidb64}&token={token}")
 
 
 def send_password_reset_email(user_id):

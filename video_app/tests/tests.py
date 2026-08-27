@@ -48,7 +48,8 @@ class ProbeVideoTests(TestCase):
     @patch('video_app.utils.subprocess.run')
     def test_probe_video_without_video_track_raises(self, mock_run):
         """A file without a video track is rejected, not accepted."""
-        mock_run.return_value.stdout = json.dumps({'streams': [], 'format': {}})
+        mock_run.return_value.stdout = json.dumps(
+            {'streams': [], 'format': {}})
         with self.assertRaises(VideoProbeError):
             probe_video('/fake/video.mp4')
 
@@ -59,7 +60,6 @@ class ProbeVideoTests(TestCase):
             1, 'ffprobe', stderr='error')
         with self.assertRaises(VideoProbeError):
             probe_video('/fake/video.mp4')
-
 
 
 @override_settings(MEDIA_ROOT=TEST_MEDIA)
