@@ -55,7 +55,7 @@ everything behind `/api/` is this project.
 | Language         | Python 3.12 (`python:3.12-alpine`)            |
 | Framework        | Django 6.1                                    |
 | API              | Django REST Framework 3.18.0                  |
-| Database         | PostgreSQL                                    |
+| Database         | PostgreSQL 18 (`postgres:18`)                 |
 | Cache            | Redis via django-redis 7.0.0                  |
 | Background tasks | django-rq 4.1.1 (Redis backed)                |
 | Auth             | djangorestframework-simplejwt 5.5.1 (cookies) |
@@ -218,18 +218,38 @@ Create a video with a title, description, category and the video file itself.
 Saving it queues a background job which
 
 1. extracts a thumbnail from the middle of the video,
-2. converts the file to HLS in every resolution up to the source resolution,
+2. converts the file to HLS in 480p, 720p and 1080p,
 3. and sets the status to `done`.
 
-The status of a video is visible on its detail page in the admin. A conversion
-that fails on a broken file sets the status to `failed`; the job itself still
-counts as finished, because the error is handled inside the job. Errors that
-are not handled, such as a job exceeding the 900 second queue timeout, show up
-in the RQ dashboard at `http://127.0.0.1:8000/django-rq/` with a traceback and
-leave the video on `processing`.
+**Replacing the video file of an existing entry queues the job again.** The old
+HLS folder and the replaced source file are removed, so nothing of the previous
+video survives. Editing only the title, description or category changes nothing
+about the conversion.
 
-Resolutions larger than the source are skipped, so a 720p upload produces 480p
-and 720p only. Requesting the missing one returns `404`.
+All three resolutions are always produced, even when the source is smaller. A
+360p upload is therefore scaled up to 1080p, which costs encoding time without
+gaining quality. The reason is the frontend: its resolution dropdown is
+hardcoded to the three values and the API does not expose which resolutions
+exist, so a missing one would leave the player on a black screen.
+
+The status of a video is visible on its detail page in the admin. Any failure
+sets the status to `failed` and the job is passed on to RQ, so the traceback
+shows up in the dashboard at `http://127.0.0.1:8000/django-rq/`. A video is
+never left on `processing`, not even when the job exceeds its timeout: RQ
+raises a `JobTimeoutException` that the job handles like any other error.
+
+Timeouts are set in `core/settings.py` and are meant as emergency brakes
+against a stuck ffmpeg, not as capacity planning:
+
+| Setting                 | Value | Covers                                    |
+| ----------------------- | ----- | ----------------------------------------- |
+| `HLS_ENCODE_TIMEOUT`    | 2 h   | one resolution, roughly a 3 hour movie    |
+| `HLS_THUMBNAIL_TIMEOUT` | 60 s  | the single thumbnail frame                |
+| `HLS_JOB_TIMEOUT`       | 6.5 h | the whole job, passed to `enqueue()`      |
+
+Measured in this container, encoding all three resolutions costs about
+1.6 seconds of CPU time per second of video, and 1080p alone about 0.7. On a
+small VPS, expect roughly half that throughput.
 
 ---
 
@@ -368,6 +388,16 @@ Base path: `/api/`
 | GET    | `/video/`                                   | List all videos, newest first  | Authenticated |
 | GET    | `/video/{movie_id}/{resolution}/index.m3u8` | HLS playlist of one resolution | Authenticated |
 | GET    | `/video/{movie_id}/{resolution}/{segment}/` | A single HLS segment           | Authenticated |
+
+The segment endpoint answers with and without the trailing slash. ffmpeg writes
+relative names such as `seg000.ts` into the playlist, so hls.js requests them
+without one; serving both spares a `301` redirect per segment.
+
+**Video files are only reachable through these endpoints.** `MEDIA_URL` is
+wired up for `media/thumbnails/` alone, so neither the uploaded source file nor
+the HLS segments can be fetched directly under `/media/`. Thumbnails stay
+public on purpose: the frontend sets `thumbnail_url` as an `img` source, and a
+preview image is not worth protecting.
 
 Registering expects three fields:
 
