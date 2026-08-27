@@ -5,10 +5,10 @@ Netflix. Users register, confirm their account by email and stream videos via
 **HLS** in three resolutions. Uploaded videos are converted in the background
 with FFmpeg, built with Django and the Django REST Framework.
 
-Authentication runs entirely on **JWT stored in HttpOnly cookies**, so the
-frontend never handles a token itself. The whole stack runs in **Docker**:
-PostgreSQL, Redis and Django with a Gunicorn server and two RQ workers. The
-frontend is provided by the Developer Akademie and lives in
+Authentication runs entirely on **JWT stored in HttpOnly cookies**, so a
+browser client never has to store a token itself. The whole stack runs in
+**Docker**: PostgreSQL, Redis and Django with a Gunicorn server and two RQ
+workers. The frontend is provided by the Developer Akademie and lives in
 [project.Videoflix](https://github.com/Developer-Akademie-Backendkurs/project.Videoflix);
 everything behind `/api/` is this project.
 
@@ -26,7 +26,7 @@ everything behind `/api/` is this project.
 - Automatic **HLS conversion** to 480p, 720p and 1080p after an upload
 - **Thumbnail** extracted from the middle of the video, no manual upload needed
 - Conversion and email delivery run in the background with **Django RQ**,
-  split across a `high`, `default` and `low` queue
+  emails on a `high` and conversions on a `low` priority queue
 - Deleting a video removes its source file, thumbnail and all HLS files
 - Auto-generated OpenAPI 3 documentation (Swagger UI & ReDoc) via drf-spectacular
 
@@ -136,8 +136,10 @@ videoflix_backend/
    | -------------------------- | ------------------------------------------------------- |
    | `SECRET_KEY`               | Django secret key, required                             |
    | `DJANGO_SUPERUSER_*`       | Admin account created on the first start                |
+   | `DEBUG`                    | Present in the template, but currently not read (see below) |
    | `DB_*`                     | PostgreSQL name, user and password                      |
-   | `REDIS_*`                  | Redis host, port and database                           |
+   | `REDIS_LOCATION`           | Connection URL used by the cache                        |
+   | `REDIS_HOST/PORT/DB`       | Connection used by the RQ queues                        |
    | `EMAIL_HOST`, `EMAIL_PORT` | SMTP server used to send mail                           |
    | `EMAIL_HOST_USER`          | SMTP user                                               |
    | `EMAIL_HOST_PASSWORD`      | SMTP password                                           |
@@ -152,14 +154,16 @@ videoflix_backend/
    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
    ```
 
-   Three more settings are optional and have working defaults, so they are not
-   part of the template. Add them to your `.env` if you need them:
+   Four more settings are read from the environment but are not part of the
+   template, because their defaults already work. Add them to your `.env` if
+   you need to change them:
 
    | Variable        | Default                                       | Purpose                                |
    | --------------- | --------------------------------------------- | -------------------------------------- |
    | `FRONTEND_URL`  | `http://127.0.0.1:5500`                       | Base URL used in the email links       |
    | `COOKIE_SECURE` | `False`                                       | Set to `True` when serving over HTTPS  |
    | `EMAIL_BACKEND` | `django.core.mail.backends.smtp.EmailBackend` | Swap it for local development          |
+   | `CORS_ALLOWED_ORIGINS` | `http://localhost:5500,http://127.0.0.1:5500` | Origins allowed to send credentials |
 
    During development it is convenient to print mails to the log instead of
    sending them:
@@ -196,9 +200,11 @@ docker compose exec web python manage.py migrate
 docker compose exec web sh
 ```
 
-> Changes to Python files take effect immediately, Gunicorn reloads them.
-> Changes to `requirements.txt` need `docker compose up --build`, and changes
-> to `backend.entrypoint.sh` need a restart of the container.
+> Changes to Python files take effect immediately in the web process, Gunicorn
+> reloads them. **The two RQ workers do not reload**, they load their code once
+> at startup, so changes to `video_app/utils.py` or `auth_app/utils.py` only
+> apply after `docker compose restart web`. Changes to `requirements.txt` need
+> `docker compose up --build`.
 
 ---
 
@@ -215,9 +221,12 @@ Saving it queues a background job which
 2. converts the file to HLS in every resolution up to the source resolution,
 3. and sets the status to `done`.
 
-The status of every video is visible in the admin. A job that fails leaves the
-video on `failed`; the reason is in the RQ dashboard at
-`http://127.0.0.1:8000/django-rq/`, including the full traceback.
+The status of a video is visible on its detail page in the admin. A conversion
+that fails on a broken file sets the status to `failed`; the job itself still
+counts as finished, because the error is handled inside the job. Errors that
+are not handled, such as a job exceeding the 900 second queue timeout, show up
+in the RQ dashboard at `http://127.0.0.1:8000/django-rq/` with a traceback and
+leave the video on `processing`.
 
 Resolutions larger than the source are skipped, so a 720p upload produces 480p
 and 720p only. Requesting the missing one returns `404`.
@@ -265,8 +274,11 @@ docker compose exec web coverage run --source=auth_app,video_app --omit='*/migra
 docker compose exec web coverage report -m
 ```
 
-The tests never invoke FFmpeg and never send real mail. Both are mocked, and
-the RQ queues run synchronously so a queued job is executed inside the test.
+No test ever invokes FFmpeg: every `subprocess` call is mocked. No mail leaves
+the machine either, Django swaps the mail backend for an in-memory one during
+tests. Where a test needs to observe a queued job, the RQ queues are switched
+to synchronous execution with `override_settings`. The suite therefore needs a
+running Redis, which the command above provides.
 
 ---
 
@@ -276,16 +288,19 @@ The API uses **JWT stored in HttpOnly cookies**, not the `Authorization`
 header. Logging in sets two cookies which the browser sends automatically with
 every following request:
 
-| Cookie          | Lifetime   | Purpose                     |
-| --------------- | ---------- | --------------------------- |
-| `access_token`  | 15 minutes | Authenticates every request |
-| `refresh_token` | 7 days     | Obtains a new access token  |
+| Cookie          | Token lifetime | Purpose                     |
+| --------------- | -------------- | --------------------------- |
+| `access_token`  | 15 minutes     | Authenticates every request |
+| `refresh_token` | 7 days         | Obtains a new access token  |
+
+The times above are the lifetimes of the **tokens**. The cookies themselves are
+session cookies and are dropped when the browser is closed.
 
 Because the cookies are `HttpOnly`, JavaScript cannot read them. A frontend
 therefore has to send its requests with `credentials: "include"`, and its
 origin has to be listed in `CORS_ALLOWED_ORIGINS`.
 
-The login response returns the user's data, never the tokens themselves:
+The login response returns the user's data, not the tokens:
 
 ```json
 {
@@ -298,7 +313,8 @@ The login response returns the user's data, never the tokens themselves:
 ```
 
 On logout the refresh token is added to a blacklist and both cookies are
-deleted, so an old token cannot be reused.
+deleted, so no new access token can be obtained. An access token that was
+copied beforehand stays valid until it expires.
 
 > **Note:** logging in is done with the **email address**. The `username` field
 > in the response carries that same address; the API contract defines it this
@@ -368,13 +384,14 @@ Registering expects three fields:
 - **Password reset never reveals whether an address exists.** Both a known and
   an unknown address return the same `200` and the same message; a mail is only
   sent in the first case.
-- **Error messages during registration are kept generic** on purpose, so the
-  API cannot be used to find out which addresses are already taken.
+- **Error messages during registration are kept generic** on purpose. The
+  wording never states what exactly was wrong with the input.
 - **Conversion runs in the background.** The upload returns immediately, the
   HLS files appear a few minutes later. Requesting a playlist before it is
   ready returns `404`, which is the documented behaviour.
-- **Queues are prioritised.** Emails go to `high`, video conversion to `low`,
-  and two workers make sure a long conversion never blocks a quick mail.
+- **Queues are prioritised.** Emails go to `high`, video conversion to `low`.
+  Both workers check `high` first, so a mail is picked up ahead of a queued
+  conversion as soon as one of the two workers is free.
 - **The video list is a flat array**, deliberately not paginated, ordered by
   `created_at` descending. The frontend uses the first entry as its hero video.
 - **`thumbnail_url` is an absolute URL**, built from the incoming request, so

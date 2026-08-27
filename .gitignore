@@ -164,6 +164,7 @@ cython_debug/
 #Documentation
 checklist.md
 CLAUDE.md
+review_findings.md
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
