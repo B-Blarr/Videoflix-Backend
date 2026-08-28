@@ -310,11 +310,16 @@ every following request:
 
 | Cookie          | Token lifetime | Purpose                     |
 | --------------- | -------------- | --------------------------- |
-| `access_token`  | 15 minutes     | Authenticates every request |
+| `access_token`  | 30 minutes     | Authenticates every request |
 | `refresh_token` | 7 days         | Obtains a new access token  |
 
 The times above are the lifetimes of the **tokens**. The cookies themselves are
 session cookies and are dropped when the browser is closed.
+
+The access token deliberately outlives the frontend's refresh interval. The
+provided frontend renews it every 20 minutes, and browsers throttle timers in
+background tabs, so a shorter lifetime would leave a window in which requests
+fail before the renewal arrives.
 
 The activation link and the password reset link carry a signed token as
 well. Both are built by Django's `default_token_generator` and stop working
@@ -385,7 +390,7 @@ Base path: `/api/`
 
 | Method | Endpoint                                    | Description                    | Auth          |
 | ------ | ------------------------------------------- | ------------------------------ | ------------- |
-| GET    | `/video/`                                   | List all videos, newest first  | Authenticated |
+| GET    | `/video/`                                   | List converted videos, newest first | Authenticated |
 | GET    | `/video/{movie_id}/{resolution}/index.m3u8` | HLS playlist of one resolution | Authenticated |
 | GET    | `/video/{movie_id}/{resolution}/{segment}/` | A single HLS segment           | Authenticated |
 

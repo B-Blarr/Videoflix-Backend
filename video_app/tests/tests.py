@@ -75,7 +75,11 @@ class HLSViewTests(APITestCase):
             RefreshToken.for_user(self.user).access_token)
         self.video = Video.objects.create(
             title='Test', description='Desc', category='Drama',
-            video_file='videos/test.mp4', thumbnail='thumbnails/test.jpg')
+            video_file='videos/test.mp4', thumbnail='thumbnails/test.jpg',
+            status=Video.Status.DONE)
+        Video.objects.create(
+            title='Still converting', description='Desc', category='Drama',
+            video_file='videos/pending.mp4')
         folder = os.path.join(
             TEST_MEDIA, 'videos', str(self.video.id), '480p')
         os.makedirs(folder, exist_ok=True)
@@ -118,6 +122,7 @@ class HLSViewTests(APITestCase):
             response.data[0]['thumbnail_url'].startswith('http://'))
 
 
+@override_settings(MEDIA_ROOT=TEST_MEDIA)
 class ConvertVideoTests(TestCase):
     """Status bookkeeping around a conversion run, with ffmpeg mocked."""
 
