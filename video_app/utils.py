@@ -28,18 +28,23 @@ def probe_video(path):
     }
 
 
+def build_ffprobe_command(path):
+    """Return the ffprobe call that reads size, frame rate and duration."""
+    return [
+        'ffprobe', '-v', 'error',
+        '-select_streams', 'v:0',
+        '-show_entries', 'stream=width,height,r_frame_rate',
+        '-show_entries', 'format=duration',
+        '-of', 'json',
+        path,
+    ]
+
+
 def run_ffprobe(path):
     """Run ffprobe and raise VideoProbeError on any failure."""
     try:
-        result = subprocess.run(
-            [
-                'ffprobe', '-v', 'error',
-                '-select_streams', 'v:0',
-                '-show_entries', 'stream=width,height,r_frame_rate',
-                '-show_entries', 'format=duration',
-                '-of', 'json',
-                path,
-            ],
+        return subprocess.run(
+            build_ffprobe_command(path),
             capture_output=True, text=True, check=True, timeout=10)
     except subprocess.TimeoutExpired:
         raise VideoProbeError(f'ffprobe timeout: {path}')
@@ -47,7 +52,6 @@ def run_ffprobe(path):
         raise VideoProbeError(f'ffprobe failed: {e.stderr}')
     except FileNotFoundError:
         raise VideoProbeError('ffprobe not found')
-    return result
 
 
 def parse_fps(raw):
