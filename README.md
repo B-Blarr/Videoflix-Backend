@@ -437,8 +437,8 @@ Registering expects three fields:
 - **The video list is a flat array**, deliberately not paginated, ordered by
   `created_at` descending. The frontend uses the first entry as its hero video.
 - **`thumbnail_url` is an absolute URL**, built from the incoming request, so
-  the frontend can use it directly as an image source. A video whose conversion
-  has not finished yet returns `null` here.
+  the frontend can use it directly as an image source. It is never `null`,
+  because the list only contains videos whose conversion has finished.
 - **Cookie security:** the `secure` flag is controlled by `COOKIE_SECURE`
   rather than by `DEBUG`, because this project serves over plain HTTP even in
   its containerised form.

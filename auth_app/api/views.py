@@ -32,7 +32,7 @@ PASSWORD_RESET_DETAIL = ("An email has been sent to reset your password.")
 PASSWORD_CONFIRM_DETAIL = ("Your Password has been successfully reset.")
 
 
-@extend_schema(responses=RegistrationResponseSerializer)
+@extend_schema(responses={201: RegistrationResponseSerializer})
 class RegistrationView(GenericAPIView):
     """Register an inactive account and return its activation token."""
 
