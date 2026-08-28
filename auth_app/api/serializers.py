@@ -129,3 +129,17 @@ class RefreshResponseSerializer(serializers.Serializer):
 
     detail = serializers.CharField()
     access = serializers.CharField()
+
+
+class RegistrationUserSerializer(serializers.Serializer):
+    """The user block of the registration answer."""
+
+    id = serializers.IntegerField()
+    email = serializers.EmailField()
+
+
+class RegistrationResponseSerializer(serializers.Serializer):
+    """Documents the registration answer with its demonstration token."""
+
+    user = RegistrationUserSerializer()
+    token = serializers.CharField()

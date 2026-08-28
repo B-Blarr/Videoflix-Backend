@@ -32,4 +32,3 @@ class Video(models.Model):
     def __str__(self):
         """Return the title so the admin lists videos by name."""
         return self.title
-

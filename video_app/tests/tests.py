@@ -80,6 +80,10 @@ class HLSViewTests(APITestCase):
         Video.objects.create(
             title='Still converting', description='Desc', category='Drama',
             video_file='videos/pending.mp4')
+        self.write_hls_files()
+
+    def write_hls_files(self):
+        """Put a playlist and one segment where the views look for them."""
         folder = os.path.join(
             TEST_MEDIA, 'videos', str(self.video.id), '480p')
         os.makedirs(folder, exist_ok=True)

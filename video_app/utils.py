@@ -1,6 +1,8 @@
 """FFmpeg helpers for probing, thumbnails and HLS conversion."""
 
-import json, os, shutil
+import json
+import os
+import shutil
 import subprocess
 from django.conf import settings
 from django.core.files.storage import default_storage
@@ -18,7 +20,7 @@ def probe_video(path):
     result = run_ffprobe(path)
     data = json.loads(result.stdout)
     if not data.get('streams'):
-            raise VideoProbeError('no video track found')
+        raise VideoProbeError('no video track found')
     stream = data['streams'][0]
     return {
         'width': stream['width'],

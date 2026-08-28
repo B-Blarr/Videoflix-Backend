@@ -25,6 +25,7 @@ def env_list(name, default=""):
             for item in os.getenv(name, default).split(",")
             if item.strip()]
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 

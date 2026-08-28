@@ -16,4 +16,3 @@ class User(AbstractUser):
         """Return the email, which is what identifies the user."""
 
         return self.email
-

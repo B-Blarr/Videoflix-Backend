@@ -16,7 +16,8 @@ from .serializers import (RegistrationSerializer,
                           CookieTokenObtainPairSerializer,
                           PasswordResetSerializer, PasswordConfirmSerializer,
                           DetailResponseSerializer, LoginResponseSerializer,
-                          RefreshResponseSerializer)
+                          RefreshResponseSerializer,
+                          RegistrationResponseSerializer)
 from .utils import (set_auth_cookie, clear_auth_cookies, unauthorized,
                     bad_request)
 from auth_app.utils import get_user_from_uidb64, enqueue_password_reset_email
@@ -31,6 +32,7 @@ PASSWORD_RESET_DETAIL = ("An email has been sent to reset your password.")
 PASSWORD_CONFIRM_DETAIL = ("Your Password has been successfully reset.")
 
 
+@extend_schema(responses=RegistrationResponseSerializer)
 class RegistrationView(GenericAPIView):
     """Register an inactive account and return its activation token."""
 
@@ -136,6 +138,7 @@ class LogoutView(APIView):
         return clear_auth_cookies(response)
 
 
+@extend_schema(responses=DetailResponseSerializer)
 class PasswordResetView(GenericAPIView):
     """Send a reset link without revealing whether the account exists."""
 
@@ -150,6 +153,7 @@ class PasswordResetView(GenericAPIView):
         return Response({'detail': PASSWORD_RESET_DETAIL})
 
 
+@extend_schema(responses=DetailResponseSerializer)
 class PasswordConfirmView(GenericAPIView):
     """Set a new password for the user behind a reset link."""
 

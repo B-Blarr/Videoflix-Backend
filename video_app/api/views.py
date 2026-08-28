@@ -11,7 +11,7 @@ from .serializers import VideoSerializer
 
 
 class VideoListView(generics.ListAPIView):
-    """Return the converted videos, newest first, as a flat unpaginated list."""
+    """Return the converted videos, newest first and unpaginated."""
 
     queryset = Video.objects.filter(status=Video.Status.DONE)
     serializer_class = VideoSerializer
