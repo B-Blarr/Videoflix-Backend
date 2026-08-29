@@ -30,26 +30,13 @@ stats
 Dockerfile
 .env
 db.sqlite3
-
-# =====================================================================
-# ERGAENZT: siehe Kommentare unten
-# =====================================================================
-
-# Virtuelle Python-Umgebung.
-# Die Zeilen "env" / "venv" weiter oben greifen NICHT, weil der Ordner
-# hier ".venv" heisst (mit Punkt). Ohne diese Zeile werden ~60 MB
-# Windows-Binaries ins Alpine-Linux-Image kopiert - dort nutzlos und
-# der Layer-Cache von "COPY . ." wird bei jeder Aenderung ungueltig.
+.coverage
 .venv
-
-# Docker-eigene Dateien werden im Image nicht gebraucht.
-# Die Zeile "Dockerfile" oben greift nicht, weil die Datei hier
-# "backend.Dockerfile" heisst.
 *.Dockerfile
 docker-compose*.yml
 .dockerignore
-
-# Git-Metadaten (".git/" steht bereits oben).
 .gitignore
 .gitattributes
+media/
+static/
 

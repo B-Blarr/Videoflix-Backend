@@ -165,23 +165,20 @@ videoflix_backend/
    | ------------------------ | --------------------------------------------- | ------------------------------------- |
    | `FRONTEND_URL`           | `http://127.0.0.1:5500`                       | Base URL used in the email links      |
    | `COOKIE_SECURE`          | `False`                                       | Set to `True` when serving over HTTPS |
-   | `EMAIL_BACKEND`          | `django.core.mail.backends.smtp.EmailBackend` | Swap in the console backend locally   |
+   | `EMAIL_BACKEND`          | `django.core.mail.backends.smtp.EmailBackend` | Backend used to deliver mail          |
    | `CORS_ALLOWED_ORIGINS`   | `http://localhost:5500,http://127.0.0.1:5500` | Origins allowed to send credentials   |
 
-   > **Without a real SMTP server, add this line to your `.env`:**
+   > ⚠️ **Fill in real mail credentials.** The template ships `EMAIL_HOST` as
+   > `smtp.example.com`, a placeholder. Mail goes out through a background
+   > worker, so registration still answers `201` while nothing ever arrives,
+   > the new account stays inactive and cannot log in. Verify your settings
+   > before you register the first user:
    >
-   > ```ini
-   > EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+   > ```bash
+   > docker compose exec web python manage.py sendtestemail you@example.com
    > ```
    >
-   > The template points `EMAIL_HOST` at `smtp.example.com`, which does not
-   > exist. Mail is sent by a background worker, so registration still answers
-   > `201` while the message never arrives, and the new account stays inactive
-   > and cannot log in. With the line above, every mail is printed to
-   > `docker compose logs -f web` instead, and you can copy the activation link
-   > straight from there.
-   >
-   > You do not need this to look around: the superuser from your `.env` is
+   > You do not need mail to look around: the superuser from your `.env` is
    > created active on the first start and can log in right away.
 
 3. **Start the stack**
@@ -200,7 +197,7 @@ videoflix_backend/
    `/api/schema/swagger-ui/`.
 
 4. **Follow the logs.** In a second terminal, this is where the conversion
-   progress shows up and, with the console backend, the emails:
+   progress and any failing background job show up:
 
    ```bash
    docker compose logs -f web

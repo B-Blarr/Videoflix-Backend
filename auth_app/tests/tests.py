@@ -102,6 +102,17 @@ class LoginTests(APITestCase):
         self.assertIn('access_token', response.cookies)
         self.assertIn('refresh_token', response.cookies)
 
+    def test_inactive_user_cannot_login(self):
+        """An account that was never activated is refused at login."""
+        self.user.is_active = False
+        self.user.save()
+        url = reverse('login')
+        data = {'email': 'test@test.de', 'password': 'SuperSecret123!'}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data)
+        self.assertNotIn('access_token', response.cookies)
+
 
 class LogoutTests(APITestCase):
     """Tests for logging out and invalidating the refresh token."""
