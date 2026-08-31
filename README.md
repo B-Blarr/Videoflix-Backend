@@ -16,6 +16,24 @@ everything behind `/api/` is this project.
 
 ---
 
+## Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Adding Videos](#adding-videos)
+- [Frontend](#frontend)
+- [Tests](#tests)
+- [Authentication](#authentication)
+- [API Documentation](#api-documentation)
+- [API Endpoints](#api-endpoints)
+- [Conventions & Notes](#conventions--notes)
+
+---
+
 ## Features
 
 - JWT authentication via **HttpOnly cookies** (register, activate, login, logout, refresh)
@@ -142,13 +160,17 @@ videoflix_backend/
    | `REDIS_LOCATION`           | Connection URL used by the cache                        |
    | `REDIS_HOST`, `REDIS_PORT` | Connection used by the RQ queues                        |
    | `REDIS_DB`                 | Redis database index used by the RQ queues              |
+   | `EMAIL_BACKEND`            | Backend used to deliver mail                            |
    | `EMAIL_HOST`, `EMAIL_PORT` | SMTP server used to send mail                           |
    | `EMAIL_HOST_USER`          | SMTP user                                               |
    | `EMAIL_HOST_PASSWORD`      | SMTP password                                           |
    | `EMAIL_USE_TLS`, `_USE_SSL`| Transport encryption, `True` or `False`                 |
    | `DEFAULT_FROM_EMAIL`       | Sender address of all outgoing mail                     |
+   | `FRONTEND_URL`             | Base URL the links in the emails point at               |
    | `ALLOWED_HOSTS`            | Comma-separated hostnames                               |
    | `CSRF_TRUSTED_ORIGINS`     | Comma-separated frontend origins                        |
+   | `CORS_ALLOWED_ORIGINS`     | Origins allowed to send credentials                     |
+   | `COOKIE_SECURE`            | Set to `True` when serving over HTTPS                   |
 
    The template already ships a working key. To generate your own without
    installing anything:
@@ -157,16 +179,9 @@ videoflix_backend/
    docker run --rm python:3.12-alpine python -c "import secrets; print(secrets.token_urlsafe(50))"
    ```
 
-   Four more settings are read from the environment but are not part of the
-   template, because their defaults already work. Add them to your `.env` if
-   you need to change them:
-
-   | Variable                 | Default                                       | Purpose                               |
-   | ------------------------ | --------------------------------------------- | ------------------------------------- |
-   | `FRONTEND_URL`           | `http://127.0.0.1:5500`                       | Base URL used in the email links      |
-   | `COOKIE_SECURE`          | `False`                                       | Set to `True` when serving over HTTPS |
-   | `EMAIL_BACKEND`          | `django.core.mail.backends.smtp.EmailBackend` | Backend used to deliver mail          |
-   | `CORS_ALLOWED_ORIGINS`   | `http://localhost:5500,http://127.0.0.1:5500` | Origins allowed to send credentials   |
+   Every one of them ships with a working value in the template, so the only
+   ones you have to touch are the database credentials and, if you want mail
+   to go out, the `EMAIL_*` block.
 
    > ⚠️ **Fill in real mail credentials.** The template ships `EMAIL_HOST` as
    > `smtp.example.com`, a placeholder. Mail goes out through a background

@@ -1,19 +1,19 @@
 # =====================================================================
-# Zeilenenden (Line Endings)
+# Line endings
 #
-# Diese Datei ist die "Single Source of Truth" fuer dieses Repo und
-# gewinnt gegen die lokale core.autocrlf-Einstellung jedes Entwicklers.
+# This file is the single source of truth for the repository. It wins
+# over whatever core.autocrlf each developer has configured locally.
 #
-# Grund: Skripte und Configs laufen im Linux-Container. Dort sind
-# CRLF (\r\n) ein echter Fehler, z. B. "/bin/sh^M: bad interpreter".
+# Reason: scripts and config files run inside the Linux container,
+# where CRLF (\r\n) is a real error, e.g. "/bin/sh^M: bad interpreter".
 # =====================================================================
 
-# Standard: Git erkennt Textdateien automatisch, speichert sie im Repo
-# immer mit LF - und schreibt sie dank eol=lf auch unter Windows mit LF
-# in die Arbeitskopie.
+# Default: Git detects text files on its own, always stores them with
+# LF in the repository and, thanks to eol=lf, checks them out with LF
+# on Windows as well.
 * text=auto eol=lf
 
-# --- Muss zwingend LF sein (wird im Container ausgefuehrt/gelesen) ---
+# --- Must be LF (executed or read inside the container) ---
 *.sh            text eol=lf
 *.py            text eol=lf
 *.yml           text eol=lf
@@ -24,12 +24,12 @@ Dockerfile      text eol=lf
 .dockerignore   text eol=lf
 .env.template   text eol=lf
 
-# --- Windows-Tools erwarten CRLF ---
+# --- Windows tools expect CRLF ---
 *.bat           text eol=crlf
 *.cmd           text eol=crlf
 *.ps1           text eol=crlf
 
-# --- Binaerdateien: Git darf hier nie konvertieren ---
+# --- Binary files: Git must never convert these ---
 *.png       -text
 *.jpg       -text
 *.jpeg      -text

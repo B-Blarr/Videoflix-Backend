@@ -82,7 +82,8 @@ def send_password_reset_email(user_id):
     """Send the reset mail; runs in the RQ worker by user id."""
     user = User.objects.get(pk=user_id)
     link = build_password_reset_link(user)
-    html_body = render_to_string('reset_password.html', {'link': link})
+    html_body = render_to_string(
+        'reset_password.html', {'link': link, 'email': user.email})
     mail = EmailMultiAlternatives(
         subject='Reset your Password',
         body=PASSWORD_RESET_TEXT.format(link=link),
