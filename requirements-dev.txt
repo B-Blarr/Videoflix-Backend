@@ -1,0 +1,4 @@
+-r requirements.txt
+
+flake8==7.3.0
+flake8-functions==0.1.0

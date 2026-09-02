@@ -62,14 +62,9 @@ def parse_fps(raw):
     return int(num) / int(den)
 
 
-def build_hls_command(input_path, output_dir, height, fps):
-    """Build the ffmpeg call for one HLS variant with a fixed GOP."""
-    gop = round(fps * settings.HLS_GOP_SECONDS)
-
+def build_encoding_flags(gop):
+    """Return the video and audio flags shared by every HLS variant."""
     return [
-        'ffmpeg', '-y',
-        '-i', input_path,
-        '-vf', f'scale=-2:{height}',
         '-c:v', 'libx264',
         '-preset', settings.HLS_PRESET,
         '-crf', str(settings.HLS_CRF),
@@ -78,6 +73,18 @@ def build_hls_command(input_path, output_dir, height, fps):
         '-sc_threshold', '0',
         '-c:a', 'aac',
         '-b:a', settings.HLS_AUDIO_BITRATE,
+    ]
+
+
+def build_hls_command(input_path, output_dir, height, fps):
+    """Build the ffmpeg call for one HLS variant with a fixed GOP."""
+    gop = round(fps * settings.HLS_GOP_SECONDS)
+
+    return [
+        'ffmpeg', '-y',
+        '-i', input_path,
+        '-vf', f'scale=-2:{height}',
+        *build_encoding_flags(gop),
         '-hls_time', str(settings.HLS_SEGMENT_SECONDS),
         '-hls_playlist_type', 'vod',
         '-hls_segment_filename', os.path.join(output_dir, 'seg%03d.ts'),

@@ -9,4 +9,4 @@ class VideoAppConfig(AppConfig):
 
     def ready(self):
         """Import the signal handlers so they get connected."""
-        from . import signals
+        from . import signals # noqa:401
