@@ -1,4 +1,4 @@
-# Videoflix Backend
+# Videoflix
 
 A RESTful backend for **Videoflix**, a video streaming platform in the style of
 Netflix. Users register, confirm their account by email and stream videos via
