@@ -1,0 +1,16 @@
+{
+  // Interpreter for editor features only. The application itself always runs
+  // in Docker. Path is Windows; on macOS and Linux it is backend/.venv/bin/python.
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+
+  "[python]": {
+    // Mirrors max-line-length from .flake8, so the limit is visible while typing.
+    "editor.rulers": [79]
+  },
+
+  // Build artefacts that never need to be opened by hand.
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  }
+}

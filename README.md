@@ -1,16 +1,19 @@
-# Videoflix Backend
+# Videoflix
 
-A RESTful backend for **Videoflix**, a video streaming platform in the style of
-Netflix. Users register, confirm their account by email and stream videos via
-**HLS** in three resolutions. Uploaded videos are converted in the background
-with FFmpeg. The project is built with Django and the Django REST Framework.
+**Videoflix** is a video streaming platform in the style of Netflix. Users
+register, confirm their account by email and stream videos via **HLS** in
+three resolutions. Uploaded videos are converted in the background with
+FFmpeg.
 
-Authentication runs entirely on **JWT stored in HttpOnly cookies**, so a
-browser client never has to store a token itself. The whole stack runs in
-**Docker**: PostgreSQL, Redis and Django with a Gunicorn server and two RQ
-workers. The frontend is provided by the Developer Akademie and lives in
-[project.Videoflix](https://github.com/Developer-Akademie-Backendkurs/project.Videoflix);
-everything behind `/api/` is this project.
+This repository is a monorepo. The backend in `backend/` is complete and is
+what the rest of this document describes: Django and the Django REST
+Framework, with authentication running entirely on **JWT stored in HttpOnly
+cookies**, so a browser client never has to store a token itself. The whole
+stack runs in **Docker**: PostgreSQL, Redis and Django behind Gunicorn with
+two RQ workers.
+
+An **Angular frontend** in `frontend/` is in progress and not part of this
+repository yet.
 
 ![Videoflix API documentation](assets/preview.png)
 
@@ -27,6 +30,7 @@ everything behind `/api/` is this project.
 - [Adding Videos](#adding-videos)
 - [Frontend](#frontend)
 - [Tests](#tests)
+- [Local Development](#local-development)
 - [Authentication](#authentication)
 - [API Documentation](#api-documentation)
 - [API Endpoints](#api-endpoints)
@@ -86,21 +90,25 @@ everything behind `/api/` is this project.
 ## Project Structure
 
 ```text
-videoflix_backend/
-├── core/                # Project settings, root URL config, WSGI/ASGI
-├── auth_app/            # Registration, activation, login, logout, password reset
-│   ├── api/             # serializers.py, views.py, urls.py, authentication.py, utils.py
-│   ├── templates/       # HTML emails for activation and password reset
-│   ├── utils.py         # Token and link building, email delivery
-│   └── signals.py       # Queues the activation email on registration
-├── video_app/           # Video model, listing and HLS delivery
-│   ├── api/             # serializers.py, views.py, urls.py
-│   ├── utils.py         # FFmpeg calls, path helpers, conversion pipeline
-│   └── signals.py       # Queues the conversion, cleans up on delete
-├── docker-compose.yml
-├── backend.Dockerfile
-├── backend.entrypoint.sh
-└── requirements.txt
+Videoflix/
+├── backend/                  # The Django project, everything behind /api/
+│   ├── core/                 # Project settings, root URL config, WSGI/ASGI
+│   ├── auth_app/             # Registration, activation, login, logout, password reset
+│   │   ├── api/              # serializers.py, views.py, urls.py, authentication.py, utils.py
+│   │   ├── templates/        # HTML emails for activation and password reset
+│   │   ├── utils.py          # Token and link building, email delivery
+│   │   └── signals.py        # Queues the activation email on registration
+│   ├── video_app/            # Video model, listing and HLS delivery
+│   │   ├── api/              # serializers.py, views.py, urls.py
+│   │   ├── utils.py          # FFmpeg calls, path helpers, conversion pipeline
+│   │   └── signals.py        # Queues the conversion, cleans up on delete
+│   ├── backend.Dockerfile
+│   ├── backend.entrypoint.sh
+│   ├── requirements.txt      # Runtime dependencies, installed into the image
+│   └── requirements-dev.txt  # Adds the linter on top, for local use only
+├── docker-compose.yml        # Orchestrates db, redis and web
+├── .env.template
+└── .flake8
 ```
 
 ---
@@ -132,8 +140,8 @@ videoflix_backend/
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/B-Blarr/Videoflix-Backend.git
-   cd Videoflix-Backend
+   git clone https://github.com/B-Blarr/Videoflix.git
+   cd Videoflix
    ```
 
 2. **Set up your environment file.** Copy the provided template, then fill in
@@ -236,8 +244,8 @@ docker compose down -v     # stop and delete all data, for a clean start
 
 > Changes to Python files take effect immediately in the web process, because
 > Gunicorn reloads them. **The two RQ workers do not reload.** They load their
-> code once at startup, so changes to `video_app/utils.py` or
-> `auth_app/utils.py` only apply after `docker compose restart web`. Changes to `requirements.txt` need
+> code once at startup, so changes to `backend/video_app/utils.py` or
+> `backend/auth_app/utils.py` only apply after `docker compose restart web`. Changes to `backend/requirements.txt` need
 > `docker compose up --build`.
 
 ---
@@ -270,7 +278,7 @@ covers a timeout, because RQ raises a regular exception for it. Only a worker
 process that is killed from outside leaves a video stuck in `processing`.
 
 Conversion takes roughly 1.6 times the runtime of the video. The timeouts
-that stop a stuck FFmpeg are set as `HLS_*_TIMEOUT` in `core/settings.py`.
+that stop a stuck FFmpeg are set as `HLS_*_TIMEOUT` in `backend/core/settings.py`.
 
 The converted files do not appear in your project folder. `docker-compose.yml`
 mounts a named volume over `media/`, so uploads, thumbnails and HLS segments
@@ -284,8 +292,11 @@ docker compose exec web ls -R media/
 
 ## Frontend
 
-This repository contains the backend only. The matching frontend is provided
-by the Developer Akademie:
+An **Angular frontend** will live in `frontend/`. It is not part of this
+repository yet, so everything documented here is the API.
+
+To drive that API from a browser in the meantime, use the reference frontend
+from the Developer Akademie, which this backend was built against:
 
 ```bash
 git clone https://github.com/Developer-Akademie-Backendkurs/project.Videoflix.git
@@ -330,6 +341,55 @@ during tests. Where a test needs to observe a queued job, the RQ queues are
 switched to synchronous execution with `override_settings`. That is why the suite runs
 inside the container, where Redis is reachable.
 
+## Local Development
+
+Everything the application needs already runs in Docker, so a local Python
+installation is optional. You only want one for two things: running the linter
+without starting a container, and giving your editor working autocompletion.
+
+Create the environment inside `backend/` and install the development
+requirements. They pull in the runtime ones through `-r requirements.txt`, so
+one command covers both.
+
+Windows (PowerShell):
+
+```powershell
+python -m venv backend\.venv
+backend\.venv\Scripts\python.exe -m pip install -r backend\requirements-dev.txt
+```
+
+macOS / Linux:
+
+```bash
+python3 -m venv backend/.venv
+backend/.venv/bin/python -m pip install -r backend/requirements-dev.txt
+```
+
+Run the linter **from the repository root**, otherwise it will not find
+`.flake8`:
+
+```powershell
+backend\.venv\Scripts\flake8 .
+```
+
+```bash
+backend/.venv/bin/flake8 .
+```
+
+A clean run prints nothing and exits with `0`. The rules live in `.flake8`:
+lines are capped at 79 characters, functions at 14 lines through
+`flake8-functions`, and migrations are excluded.
+
+`.vscode/settings.json` points the Python extension at this environment and
+draws a ruler at column 79. The path in it is the Windows one; on macOS and
+Linux change it to `backend/.venv/bin/python`.
+
+> ⚠️ **A virtual environment cannot be moved.** Every launcher in `Scripts/`
+> stores the absolute path to its interpreter, so renaming the project folder
+> breaks all of them. They then exit with code `1` and print nothing at all,
+> which looks like a broken project rather than a broken tool. The fix is to
+> delete `backend/.venv` and create it again.
+
 ---
 
 ## Authentication
@@ -349,8 +409,8 @@ session cookies and are dropped when the browser is closed.
 The activation link and the password reset link carry a signed token as well.
 Both are created by Django's `default_token_generator` and expire after
 **24 hours**, a period configured through `PASSWORD_RESET_TIMEOUT` in
-`core/settings.py`. The reset email spells this period out, so the setting and
-the wording in `auth_app/templates/reset_password.html` have to be changed
+`backend/core/settings.py`. The reset email spells this period out, so the setting and
+the wording in `backend/auth_app/templates/reset_password.html` have to be changed
 together.
 
 Because the cookies are `HttpOnly`, JavaScript cannot read them. A frontend
@@ -427,7 +487,7 @@ relative names such as `seg000.ts` into the playlist, so hls.js requests them
 without one; serving both spares a `301` redirect per segment.
 
 **Neither the uploaded source file nor the HLS segments are reachable outside
-these endpoints.** The media route in `core/urls.py` serves `media/thumbnails/`
+these endpoints.** The media route in `backend/core/urls.py` serves `media/thumbnails/`
 alone, so nothing else can be fetched under `/media/`. Thumbnails stay
 public on purpose: the frontend sets `thumbnail_url` as an `img` source, and a
 preview image is not worth protecting.
