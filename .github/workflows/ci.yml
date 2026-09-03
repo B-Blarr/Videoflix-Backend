@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Style only. Needs no database and no cache, so it finishes in seconds
+  # and reports independently of the test job.
+  lint:
+    name: flake8
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install linter
+        run: pip install -r backend/requirements-dev.txt
+
+      # Runs from the repository root, which is where .flake8 lives.
+      - name: Run flake8
+        run: flake8 .
+
+  test:
+    name: Django tests
+    runs-on: ubuntu-latest
+
+    # Postgres and Redis run beside the job. The images match the ones in
+    # docker-compose.yml so the suite meets the same versions it does locally.
+    services:
+      db:
+        image: postgres:18
+        env:
+          POSTGRES_DB: videoflix_db
+          POSTGRES_USER: videoflix_user
+          POSTGRES_PASSWORD: videoflix_password
+        ports:
+          - 5432:5432
+        # Without the health check the tests can start before Postgres accepts
+        # connections, which fails the run for no real reason.
+        options: >-
+          --health-cmd "pg_isready -U videoflix_user -d videoflix_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # settings.py falls back to the compose service names "db" and "redis".
+      # Those do not resolve here: service containers are reached over
+      # localhost through the mapped ports above.
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: videoflix_db
+      DB_USER: videoflix_user
+      DB_PASSWORD: videoflix_password
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_LOCATION: redis://localhost:6379/1
+      # Throwaway value for the test run. Not a secret, and used nowhere else.
+      SECRET_KEY: ci-only-key-not-used-outside-this-workflow
+      # Guarantees that no run can reach for a real SMTP server.
+      EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      # FFmpeg is deliberately not installed: every subprocess call in the
+      # suite is mocked, so no conversion ever runs here.
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Run tests
+        working-directory: backend
+        run: coverage run --source=auth_app,video_app manage.py test
+
+      # Reported for information. A drop in coverage does not fail the build.
+      - name: Coverage report
+        working-directory: backend
+        run: coverage report -m
