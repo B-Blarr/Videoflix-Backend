@@ -1,5 +1,7 @@
 # Videoflix
 
+[![CI](https://github.com/B-Blarr/Videoflix/actions/workflows/ci.yml/badge.svg)](https://github.com/B-Blarr/Videoflix/actions/workflows/ci.yml)
+
 **Videoflix** is a video streaming platform in the style of Netflix. Users
 register, confirm their account by email and stream videos via **HLS** in
 three resolutions. Uploaded videos are converted in the background with
