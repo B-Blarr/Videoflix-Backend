@@ -261,3 +261,8 @@ poetry.toml
 
 # LSP config files
 pyrightconfig.json
+
+# Claude Code: Arbeitsanweisung und Archiv, projektintern
+CLAUDE.md
+CLAUDE.local.md
+_archiv/
