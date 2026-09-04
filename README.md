@@ -108,6 +108,11 @@ Videoflix/
 │   ├── backend.entrypoint.sh
 │   ├── requirements.txt      # Runtime dependencies, installed into the image
 │   └── requirements-dev.txt  # Adds the linter on top, for local use only
+├── frontend/                 # The Angular application
+│   ├── src/app/             # Components, routes, services
+│   ├── public/              # Static assets served as-is
+│   └── angular.json         # Workspace and build configuration
+├── .github/workflows/ci.yml  # flake8 and the Django test suite
 ├── docker-compose.yml        # Orchestrates db, redis and web
 ├── .env.template
 └── .flake8
@@ -345,6 +350,8 @@ inside the container, where Redis is reachable.
 
 ## Local Development
 
+### Backend
+
 Everything the application needs already runs in Docker, so a local Python
 installation is optional. You only want one for two things: running the linter
 without starting a container, and giving your editor working autocompletion.
@@ -391,6 +398,29 @@ Linux change it to `backend/.venv/bin/python`.
 > breaks all of them. They then exit with code `1` and print nothing at all,
 > which looks like a broken project rather than a broken tool. The fix is to
 > delete `backend/.venv` and create it again.
+
+### Frontend
+
+The Angular application lives in `frontend/`. Node and the Angular CLI are
+required here; unlike the backend it does not run in a container.
+
+Install the dependencies once after cloning:
+
+```bash
+cd frontend
+npm install
+```
+
+| Command | What it does |
+| ------- | ------------ |
+| `ng serve` | Development server on `http://localhost:4200`, reloads on save |
+| `ng build` | Production build into `frontend/dist/` |
+| `ng test` | Unit tests with the Vitest runner |
+| `ng generate component <name>` | Scaffolds a component; `ng generate --help` lists the rest |
+
+The application is generated **zoneless**, so there is no `zone.js`. Change
+detection runs through signals, and a value that is not a signal will not
+trigger a re-render on its own.
 
 ---
 

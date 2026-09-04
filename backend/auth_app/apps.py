@@ -10,5 +10,5 @@ class AuthAppConfig(AppConfig):
 
     def ready(self):
         """Import signals and the schema extension once apps load."""
-        from . import signals # noqa:401
-        from .api import schema # noqa:401
+        from . import signals  # noqa: F401
+        from .api import schema  # noqa: F401
